@@ -22,7 +22,11 @@ export function OptionsStep({ title, note, options, value, onChange, multiple = 
       <h1>{title}</h1>
       {note ? <p>{note}</p> : null}
 
-      <div className={`options-grid ${hasImages ? "options-grid--visual" : ""}`}>
+      <div
+        className={`options-grid ${hasImages ? "options-grid--visual" : ""} ${
+          hasImages ? `options-grid--count-${options.length}` : ""
+        }`}
+      >
         {options.map((option) => (
           <OptionCard
             key={option.id}

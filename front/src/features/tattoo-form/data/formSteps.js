@@ -1,16 +1,15 @@
 export const formSteps = [
   "name",
-  "hasTattoos",
+  "description",
+  "style",
+  "color",
   "bodyReference",
   "generalZone",
   "specificZone",
   "placement",
-  "style",
-  "color",
-  "description",
   "timing",
   "contactTime",
-  "phone",
+  "hasTattoos",
 ];
 
 export const tattooStyles = [
@@ -23,7 +22,6 @@ export const tattooStyles = [
   "traditional",
   "japanese",
   "geometric",
-  "other",
 ];
 
 export const colorModes = ["blackGrey", "color"];

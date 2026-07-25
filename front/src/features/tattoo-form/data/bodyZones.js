@@ -79,13 +79,19 @@ function normalizeReference(reference) {
   return reference === "female" ? "female" : "male";
 }
 
-function imagePath(reference, fileName) {
-  return `/images/body-references/${reference}/${fileName}`;
+function imagePath(reference, fileName, useThumbnail = false) {
+  const baseFolder = useThumbnail ? "body-references-thumbs" : "body-references";
+  const extension = useThumbnail ? ".jpg" : "";
+  const normalizedFileName = useThumbnail
+    ? fileName.replace(/\.[^.]+$/, extension)
+    : fileName;
+
+  return `/images/${baseFolder}/${reference}/${normalizedFileName}`;
 }
 
 export function getBodyReferenceImageUrl(reference) {
   const normalizedReference = normalizeReference(reference);
-  return imagePath(normalizedReference, `general-${normalizedReference}.png`);
+  return imagePath(normalizedReference, `general-${normalizedReference}.png`, true);
 }
 
 export function getGeneralZoneImageUrl(generalZoneId, reference) {
@@ -93,7 +99,7 @@ export function getGeneralZoneImageUrl(generalZoneId, reference) {
   const fileName = imageByGeneralZone[normalizedReference]?.[generalZoneId];
 
   return fileName
-    ? imagePath(normalizedReference, fileName)
+    ? imagePath(normalizedReference, fileName, true)
     : getBodyReferenceImageUrl(normalizedReference);
 }
 
@@ -102,10 +108,15 @@ export function getSpecificZoneImageUrl(specificZoneId, reference) {
   const fileName = imageByZone[normalizedReference]?.[specificZoneId];
 
   return fileName
-    ? imagePath(normalizedReference, fileName)
+    ? imagePath(normalizedReference, fileName, true)
     : getBodyReferenceImageUrl(normalizedReference);
 }
 
 export function getZoneImageUrl(formData) {
-  return getSpecificZoneImageUrl(formData.specificZone, formData.bodyReference);
+  const normalizedReference = normalizeReference(formData.bodyReference);
+  const fileName = imageByZone[normalizedReference]?.[formData.specificZone];
+
+  return fileName
+    ? imagePath(normalizedReference, fileName)
+    : imagePath(normalizedReference, `general-${normalizedReference}.png`);
 }

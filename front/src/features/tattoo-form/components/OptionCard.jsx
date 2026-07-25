@@ -10,7 +10,7 @@ export function OptionCard({ label, selected, onClick, imageUrl }) {
     >
       {imageUrl ? (
         <span className="option-card__media">
-          <img src={imageUrl} alt="" />
+          <img src={imageUrl} alt="" loading="lazy" decoding="async" />
         </span>
       ) : null}
       <span className="option-card__label">{label}</span>

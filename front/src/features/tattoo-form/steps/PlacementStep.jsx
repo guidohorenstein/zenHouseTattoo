@@ -24,6 +24,7 @@ function createBox(start, end) {
 export function PlacementStep({ title, note, imageUrl, value, onChange, labels }) {
   const canvasRef = useRef(null);
   const [draft, setDraft] = useState(null);
+  const [draggingBox, setDraggingBox] = useState(null);
 
   function startDrawing(event) {
     if (!canvasRef.current) return;
@@ -33,11 +34,33 @@ export function PlacementStep({ title, note, imageUrl, value, onChange, labels }
   }
 
   function updateDrawing(event) {
+    if (draggingBox && canvasRef.current) {
+      const point = getPoint(event, canvasRef.current);
+
+      onChange(
+        value.map((box) => {
+          if (box.id !== draggingBox.id) return box;
+
+          return {
+            ...box,
+            x: round(Math.min(100 - box.width, Math.max(0, point.x - draggingBox.offsetX))),
+            y: round(Math.min(100 - box.height, Math.max(0, point.y - draggingBox.offsetY))),
+          };
+        })
+      );
+      return;
+    }
+
     if (!draft || !canvasRef.current) return;
     setDraft({ ...draft, end: getPoint(event, canvasRef.current) });
   }
 
   function finishDrawing() {
+    if (draggingBox) {
+      setDraggingBox(null);
+      return;
+    }
+
     if (!draft) return;
 
     const box = createBox(draft.start, draft.end);
@@ -49,6 +72,19 @@ export function PlacementStep({ title, note, imageUrl, value, onChange, labels }
 
   function removeBox(id) {
     onChange(value.filter((box) => box.id !== id));
+  }
+
+  function startMovingBox(event, box) {
+    if (!canvasRef.current) return;
+    const point = getPoint(event, canvasRef.current);
+
+    event.stopPropagation();
+    event.currentTarget.setPointerCapture(event.pointerId);
+    setDraggingBox({
+      id: box.id,
+      offsetX: point.x - box.x,
+      offsetY: point.y - box.y,
+    });
   }
 
   const draftBox = draft ? { id: "draft", ...createBox(draft.start, draft.end) } : null;
@@ -76,7 +112,10 @@ export function PlacementStep({ title, note, imageUrl, value, onChange, labels }
           onPointerDown={startDrawing}
           onPointerMove={updateDrawing}
           onPointerUp={finishDrawing}
-          onPointerCancel={() => setDraft(null)}
+          onPointerCancel={() => {
+            setDraft(null);
+            setDraggingBox(null);
+          }}
         >
           <img className="placement-image" src={imageUrl} alt="" draggable="false" />
 
@@ -84,6 +123,9 @@ export function PlacementStep({ title, note, imageUrl, value, onChange, labels }
             <div
               className="placement-box"
               key={box.id}
+              onPointerDown={
+                box.id !== "draft" ? (event) => startMovingBox(event, box) : undefined
+              }
               style={{
                 left: `${box.x}%`,
                 top: `${box.y}%`,

@@ -8,7 +8,22 @@ export function FormNavigation({
   onBack,
   onNext,
   onSubmit,
+  onInvalid,
 }) {
+  function handlePrimaryClick() {
+    if (!canGoNext) {
+      onInvalid();
+      return;
+    }
+
+    if (isLastStep) {
+      onSubmit();
+      return;
+    }
+
+    onNext();
+  }
+
   return (
     <div className="navigation">
       <button
@@ -21,10 +36,12 @@ export function FormNavigation({
       </button>
 
       <button
-        className={`primary-button ${isLastStep ? "success" : ""}`}
+        className={`primary-button ${isLastStep ? "success" : ""} ${
+          !canGoNext ? "is-disabled" : ""
+        }`}
         type="button"
-        onClick={isLastStep ? onSubmit : onNext}
-        disabled={!canGoNext}
+        onClick={handlePrimaryClick}
+        aria-disabled={!canGoNext}
       >
         {isLastStep ? quoteLabel : nextLabel}
       </button>
