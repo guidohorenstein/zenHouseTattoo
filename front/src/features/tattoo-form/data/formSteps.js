@@ -1,8 +1,8 @@
 export const formSteps = [
   "name",
   "description",
-  "style",
   "color",
+  "style",
   "bodyReference",
   "generalZone",
   "specificZone",
@@ -13,15 +13,24 @@ export const formSteps = [
 ];
 
 export const tattooStyles = [
-  "fineLine",
-  "shading",
-  "blackwork",
-  "realism",
-  "detailed",
-  "minimal",
   "traditional",
   "japanese",
   "geometric",
+  "fineLine",
+  "biomechanical",
+  "chicano",
+  "futuristic",
+  "lettering",
+  "neoTraditional",
+  "newSchool",
+  "ornamental",
+  "portrait",
+  "realism",
+  "sketch",
+  "surrealism",
+  "trashPolka",
+  "tribal",
+  "watercolor",
 ];
 
 export const colorModes = ["blackGrey", "color"];

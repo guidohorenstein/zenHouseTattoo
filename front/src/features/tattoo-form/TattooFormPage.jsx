@@ -87,6 +87,14 @@ function toOptions(ids, t, getImageUrl) {
   }));
 }
 
+function getTattooStyleImageUrl(styleId, colorMode) {
+  if (colorMode === "blackGrey") {
+    return `/images/tattoo-styles/black-grey/thumbs/${styleId}.jpg`;
+  }
+
+  return `/images/tattoo-styles/thumbs/${styleId}.jpg`;
+}
+
 export function TattooFormPage() {
   const [language, setLanguage] = useState("he");
   const [currentStep, setCurrentStep] = useState(0);
@@ -117,7 +125,7 @@ export function TattooFormPage() {
       styles: toOptions(
         tattooStyles,
         t,
-        (styleId) => `/images/tattoo-styles/thumbs/${styleId}.jpg`,
+        (styleId) => getTattooStyleImageUrl(styleId, formData.colorMode),
       ),
       colors: toOptions(
         colorModes,
@@ -127,7 +135,7 @@ export function TattooFormPage() {
       timing: toOptions(timingOptions, t),
       contactTimes: toOptions(contactTimeOptions, t),
     }),
-    [formData.bodyReference, formData.generalZone, t],
+    [formData.bodyReference, formData.colorMode, formData.generalZone, t],
   );
 
   function updateFormData(field, value) {
@@ -141,6 +149,10 @@ export function TattooFormPage() {
 
       if (field === "specificZone" || field === "bodyReference") {
         nextData.placementBoxes = [];
+      }
+
+      if (field === "colorMode" && value !== currentData.colorMode) {
+        nextData.styles = [];
       }
 
       return nextData;
@@ -311,7 +323,9 @@ export function TattooFormPage() {
       <section className="form-stage" aria-label={t.intro}>
         <div
           className={`form-card ${
-            ["generalZone", "specificZone", "placement"].includes(stepId)
+            ["style", "generalZone", "specificZone", "placement"].includes(
+              stepId,
+            )
               ? "form-card--wide"
               : ""
           }`}
