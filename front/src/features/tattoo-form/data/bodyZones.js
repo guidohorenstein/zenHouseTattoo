@@ -5,7 +5,7 @@ export const generalZones = [
   },
   {
     id: "arm",
-    specific: ["armInner", "armOuter"],
+    specific: ["armInner", "armOuter", "sleeve"],
   },
   {
     id: "leg",
@@ -32,6 +32,7 @@ const imageByZone = {
     torsoRibs: "torsoRibs-male.png",
     armInner: "armInnerFace-male.png",
     armOuter: "armOuterFace-male.png",
+    sleeve: "armOuterFace-male.png",
     legsFront: "legsFrontFace-male.png",
     legBack: "legBackFace-male.png",
     legSide: "legOuterFace-male.png",
@@ -47,6 +48,7 @@ const imageByZone = {
     torsoRibs: "torsoRibs-female.png",
     armInner: "armInnerFace-female.png",
     armOuter: "armOuterFace-female.png",
+    sleeve: "armOuterFace-female.png",
     legsFront: "legsFrontFace-female.png",
     legBack: "legBackFace-female.png",
     legSide: "legSideFace-female.png",

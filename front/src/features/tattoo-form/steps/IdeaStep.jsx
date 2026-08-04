@@ -3,13 +3,13 @@ export function IdeaStep({
   value,
   onDescriptionChange,
   placeholder,
-  referenceLinks,
-  onReferenceLinksChange,
   referenceImages,
   onReferenceImagesChange,
   labels,
+  notice,
 }) {
   const canAddImage = referenceImages.length < 4;
+  const characterCount = value.length;
 
   function handleFilesChange(event) {
     const freeSlots = Math.max(0, 4 - referenceImages.length);
@@ -23,21 +23,6 @@ export function IdeaStep({
 
     onReferenceImagesChange([...referenceImages, ...mappedFiles]);
     event.target.value = "";
-  }
-
-  function updateLink(index, value) {
-    const nextLinks = [...referenceLinks];
-    nextLinks[index] = value;
-    onReferenceLinksChange(nextLinks);
-  }
-
-  function addLink() {
-    if (referenceLinks.length >= 5) return;
-    onReferenceLinksChange([...referenceLinks, ""]);
-  }
-
-  function removeLink(index) {
-    onReferenceLinksChange(referenceLinks.filter((_, linkIndex) => linkIndex !== index));
   }
 
   function removeImage(imageId) {
@@ -54,38 +39,23 @@ export function IdeaStep({
     <div className="step">
       <h1>{title}</h1>
 
-      <textarea
-        className="textarea"
-        maxLength={700}
-        value={value}
-        placeholder={placeholder}
-        onChange={(event) => onDescriptionChange(event.target.value)}
-      />
+      {notice ? <p className="step-alert">{notice}</p> : null}
 
-      <div className="link-list">
-        {referenceLinks.map((link, index) => (
-          <div className="link-row" key={`reference-link-${index + 1}`}>
-            <input
-              className="link-input"
-              type="url"
-              value={link}
-              placeholder={labels.referenceLinkPlaceholder}
-              onChange={(event) => updateLink(index, event.target.value)}
-            />
-            <button className="ghost-button" type="button" onClick={() => removeLink(index)}>
-              {labels.delete}
-            </button>
-          </div>
-        ))}
-
-        <button
-          className="ghost-button add-link-button"
-          type="button"
-          onClick={addLink}
-          disabled={referenceLinks.length >= 5}
+      <div className="textarea-wrap">
+        <textarea
+          className="textarea"
+          maxLength={350}
+          value={value}
+          placeholder={placeholder}
+          onChange={(event) => onDescriptionChange(event.target.value)}
+        />
+        <span
+          className={`character-counter ${
+            characterCount > 0 && characterCount < 20 ? "is-short" : ""
+          }`}
         >
-          {labels.addLink}
-        </button>
+          {characterCount}/350
+        </span>
       </div>
 
       <label className="upload-box">

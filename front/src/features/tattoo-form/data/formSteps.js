@@ -1,4 +1,4 @@
-export const formSteps = [
+﻿export const formSteps = [
   "name",
   "description",
   "color",
@@ -13,28 +13,21 @@ export const formSteps = [
 ];
 
 export const tattooStyles = [
+  "fineLine",
+  "realism",
+  "newAge",
   "traditional",
   "japanese",
-  "geometric",
-  "fineLine",
-  "biomechanical",
-  "chicano",
-  "futuristic",
-  "lettering",
-  "neoTraditional",
-  "newSchool",
-  "ornamental",
-  "portrait",
-  "realism",
-  "sketch",
+  "blackwork",
   "surrealism",
-  "trashPolka",
-  "tribal",
-  "watercolor",
+  "ornamental",
+  "neoTraditional",
+  "other",
 ];
 
 export const colorModes = ["blackGrey", "color"];
 
-export const timingOptions = ["now", "weeks", "month"];
+export const timingOptions = ["now", "weeks", "month", "dontCare"];
 
 export const contactTimeOptions = ["morning", "afternoon", "night"];
+

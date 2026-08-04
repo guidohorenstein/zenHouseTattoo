@@ -25,9 +25,12 @@ export function PlacementStep({ title, note, imageUrl, value, onChange, labels }
   const canvasRef = useRef(null);
   const [draft, setDraft] = useState(null);
   const [draggingBox, setDraggingBox] = useState(null);
+  const reachedBoxLimit = value.length >= 3;
 
   function startDrawing(event) {
     if (!canvasRef.current) return;
+    if (reachedBoxLimit) return;
+
     const point = getPoint(event, canvasRef.current);
     event.currentTarget.setPointerCapture(event.pointerId);
     setDraft({ start: point, end: point });
@@ -67,6 +70,8 @@ export function PlacementStep({ title, note, imageUrl, value, onChange, labels }
     setDraft(null);
 
     if (box.width < 1 || box.height < 1) return;
+    if (reachedBoxLimit) return;
+
     onChange([...value, { id: `box-${Date.now()}`, ...box }]);
   }
 
@@ -96,6 +101,9 @@ export function PlacementStep({ title, note, imageUrl, value, onChange, labels }
 
       <div className="placement">
         <div className="placement-tools">
+          <span className="placement-limit">
+            {value.length}/3 · {labels.maxPlacementBoxes}
+          </span>
           <button
             className="ghost-button"
             type="button"

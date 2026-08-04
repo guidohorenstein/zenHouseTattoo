@@ -1,6 +1,14 @@
-import { OptionCard } from "../components/OptionCard";
+﻿import { OptionCard } from "../components/OptionCard";
 
-export function OptionsStep({ title, note, options, value, onChange, multiple = false }) {
+export function OptionsStep({
+  title,
+  note,
+  options,
+  value,
+  onChange,
+  multiple = false,
+  variant = "",
+}) {
   const hasImages = options.some((option) => option.imageUrl);
 
   function handleClick(optionId) {
@@ -24,8 +32,8 @@ export function OptionsStep({ title, note, options, value, onChange, multiple = 
 
       <div
         className={`options-grid ${hasImages ? "options-grid--visual" : ""} ${
-          hasImages ? `options-grid--count-${options.length}` : ""
-        }`}
+          variant ? `options-grid--${variant}` : ""
+        } options-grid--count-${options.length}`}
       >
         {options.map((option) => (
           <OptionCard
@@ -40,3 +48,4 @@ export function OptionsStep({ title, note, options, value, onChange, multiple = 
     </div>
   );
 }
+

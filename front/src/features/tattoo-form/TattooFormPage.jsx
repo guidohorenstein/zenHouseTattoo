@@ -38,7 +38,6 @@ const initialFormData = {
   styles: [],
   colorMode: "",
   ideaDescription: "",
-  referenceLinks: [""],
   referenceImages: [],
   timing: "",
   contactTimes: [],
@@ -49,10 +48,7 @@ function isStepValid(stepId, formData) {
   const hasValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
     formData.email.trim(),
   );
-  const hasIdeaText = length(formData.ideaDescription) >= 10;
-  const hasReferenceLink = formData.referenceLinks.some(
-    (link) => link.trim().length > 0,
-  );
+  const hasIdeaText = length(formData.ideaDescription) >= 20;
   const hasReferenceImage = formData.referenceImages.length > 0;
 
   const validations = {
@@ -60,7 +56,7 @@ function isStepValid(stepId, formData) {
       length(formData.fullName) >= 3 &&
       hasValidEmail &&
       length(formData.phone) >= 8,
-    description: hasIdeaText || hasReferenceLink || hasReferenceImage,
+    description: hasIdeaText || hasReferenceImage,
     bodyReference: Boolean(formData.bodyReference),
     hasTattoos: Boolean(formData.hasTattoos),
     generalZone: Boolean(formData.generalZone),
@@ -99,6 +95,7 @@ export function TattooFormPage() {
   const [language, setLanguage] = useState("he");
   const [currentStep, setCurrentStep] = useState(0);
   const [transitionDirection, setTransitionDirection] = useState("next");
+  const [ideaNotice, setIdeaNotice] = useState("");
   const [formData, setFormData] = useState(initialFormData);
   const t = translations[language];
   const direction =
@@ -123,7 +120,9 @@ export function TattooFormPage() {
           getSpecificZoneImageUrl(specificZoneId, formData.bodyReference),
       ),
       styles: toOptions(
-        tattooStyles,
+        formData.colorMode === "blackGrey"
+          ? tattooStyles
+          : tattooStyles.filter((styleId) => styleId !== "blackwork"),
         t,
         (styleId) => getTattooStyleImageUrl(styleId, formData.colorMode),
       ),
@@ -157,10 +156,32 @@ export function TattooFormPage() {
 
       return nextData;
     });
+
+    if (field === "referenceImages" && value.length > 0) {
+      setIdeaNotice("");
+    }
   }
 
   function goNext() {
     if (!canGoNext || isLastStep) return;
+
+    if (
+      stepId === "style" &&
+      formData.styles.includes("other") &&
+      formData.referenceImages.length === 0
+    ) {
+      const descriptionStepIndex = formSteps.indexOf("description");
+
+      setIdeaNotice(t.otherStyleNeedsReference);
+      setTransitionDirection("back");
+      setCurrentStep(descriptionStepIndex);
+      toast.error(t.otherStyleNeedsReference, {
+        position: direction === "rtl" ? "top-left" : "top-right",
+        theme: "dark",
+      });
+      return;
+    }
+
     setTransitionDirection("next");
     setCurrentStep((step) => step + 1);
   }
@@ -252,6 +273,7 @@ export function TattooFormPage() {
           value={formData.styles}
           onChange={(value) => updateFormData("styles", value)}
           multiple
+          variant="styles"
         />
       ),
       color: (
@@ -270,15 +292,12 @@ export function TattooFormPage() {
           onDescriptionChange={(value) =>
             updateFormData("ideaDescription", value)
           }
-          referenceLinks={formData.referenceLinks}
-          onReferenceLinksChange={(value) =>
-            updateFormData("referenceLinks", value)
-          }
           referenceImages={formData.referenceImages}
           onReferenceImagesChange={(value) =>
             updateFormData("referenceImages", value)
           }
           labels={t}
+          notice={ideaNotice}
         />
       ),
       timing: (

@@ -21,12 +21,6 @@ function referenceImagesText(images) {
   return images.map((image) => image.name).join(", ");
 }
 
-function referenceLinksText(links) {
-  const cleanLinks = (links || []).map((link) => link.trim()).filter(Boolean);
-  if (cleanLinks.length === 0) return "-";
-  return cleanLinks.join("\n");
-}
-
 export function buildWhatsappMessage(formData, t) {
   const labels = t.whatsapp;
 
@@ -36,8 +30,6 @@ ${labels.name}: ${formData.fullName}
 ${labels.email}: ${formData.email}
 ${labels.phone}: ${formData.phone}
 ${labels.idea}: ${formData.ideaDescription || "-"}
-${labels.referenceLinks}:
-${referenceLinksText(formData.referenceLinks)}
 ${labels.referenceImages}: ${referenceImagesText(formData.referenceImages)}
 ${labels.style}: ${listLabels(t, formData.styles)}
 ${labels.color}: ${optionLabel(t, formData.colorMode)}
