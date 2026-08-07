@@ -126,9 +126,9 @@ export function RequestsModule({
             Timing
             <select value={filters.timing} onChange={(event) => updateFilter("timing", event.target.value)}>
               <option value="all">Any timing</option>
-              <option value="asap">ASAP</option>
-              <option value="nextWeeks">Next weeks</option>
-              <option value="nextMonth">Next month</option>
+              <option value="now">ASAP</option>
+              <option value="weeks">Next weeks</option>
+              <option value="month">Next month</option>
               <option value="dontCare">I don't care</option>
             </select>
           </label>
@@ -138,7 +138,7 @@ export function RequestsModule({
               <option value="all">Any time</option>
               <option value="morning">Morning</option>
               <option value="afternoon">Afternoon</option>
-              <option value="evening">Evening</option>
+              <option value="night">Night</option>
             </select>
           </label>
         </div>

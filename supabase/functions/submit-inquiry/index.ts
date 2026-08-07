@@ -21,13 +21,24 @@ const ALLOWED_ORIGINS = [
 const ALLOWED_BODY_REFERENCES = new Set(["male", "female"]);
 const ALLOWED_HAS_TATTOOS = new Set(["yes", "no"]);
 const ALLOWED_COLOR_MODES = new Set(["blackGrey", "color"]);
-const ALLOWED_TIMINGS = new Set(["asap", "nextWeeks", "nextMonth", "dontCare"]);
-const ALLOWED_CONTACT_TIMES = new Set(["morning", "afternoon", "evening"]);
+const ALLOWED_TIMINGS = new Set(["now", "weeks", "month", "dontCare"]);
+const ALLOWED_CONTACT_TIMES = new Set(["morning", "afternoon", "night"]);
 
 function getAllowedOrigin(request: Request) {
   const origin = request.headers.get("origin") || "";
   if (!origin) return ALLOWED_ORIGINS[0];
-  return ALLOWED_ORIGINS.includes(origin) ? origin : "";
+  if (ALLOWED_ORIGINS.includes(origin)) return origin;
+
+  try {
+    const hostname = new URL(origin).hostname;
+    if (hostname.endsWith(".workers.dev") || hostname.endsWith(".pages.dev")) {
+      return origin;
+    }
+  } catch {
+    return "";
+  }
+
+  return "";
 }
 
 function corsHeaders(request: Request) {
