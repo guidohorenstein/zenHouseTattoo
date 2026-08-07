@@ -87,4 +87,4 @@ Recommended Cloudflare Pages settings:
   - `VITE_SUPABASE_URL`
   - `VITE_SUPABASE_ANON_KEY`
 
-`public/_redirects` keeps React routes working on refresh, including `/admin`. `public/_headers` adds security headers for Cloudflare Pages.
+`wrangler.jsonc` keeps React routes working on refresh for Workers deploy. `public/_headers` adds security headers.

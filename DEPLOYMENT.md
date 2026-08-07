@@ -20,7 +20,7 @@ VITE_SUPABASE_URL=https://rjhdbfvljpxxvpssyttu.supabase.co
 VITE_SUPABASE_ANON_KEY=your-supabase-anon-or-publishable-key
 ```
 
-The file `public/_redirects` keeps React routes working on refresh, including `/admin`. The file `public/_headers` adds production security headers for Cloudflare Pages.
+For Workers deploy, `wrangler.jsonc` uses `not_found_handling = single-page-application` so React routes like `/admin` work on refresh. The file `public/_headers` adds production security headers.
 
 ## Domain
 
