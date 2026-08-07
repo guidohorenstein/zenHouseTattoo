@@ -1,6 +1,4 @@
-import { useMemo, useState } from "react";
-import { ToastContainer, toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { FormNavigation } from "./components/FormNavigation";
 import { LanguageSwitcher } from "./components/LanguageSwitcher";
 import { ProgressBar } from "./components/ProgressBar";
@@ -15,6 +13,7 @@ import {
 import {
   colorModes,
   contactTimeOptions,
+  extraTattooStyles,
   formSteps,
   tattooStyles,
   timingOptions,
@@ -49,14 +48,13 @@ function isStepValid(stepId, formData) {
     formData.email.trim(),
   );
   const hasIdeaText = length(formData.ideaDescription) >= 20;
-  const hasReferenceImage = formData.referenceImages.length > 0;
 
   const validations = {
     name:
       length(formData.fullName) >= 3 &&
       hasValidEmail &&
       length(formData.phone) >= 8,
-    description: hasIdeaText || hasReferenceImage,
+    description: hasIdeaText,
     bodyReference: Boolean(formData.bodyReference),
     hasTattoos: Boolean(formData.hasTattoos),
     generalZone: Boolean(formData.generalZone),
@@ -83,12 +81,23 @@ function toOptions(ids, t, getImageUrl) {
   }));
 }
 
+const styleImageAliases = {
+  lettering: "fineLine",
+  dotwork: "ornamental",
+  microRealism: "realism",
+  abstract: "surrealism",
+  floral: "neoTraditional",
+  mandala: "ornamental",
+};
+
 function getTattooStyleImageUrl(styleId, colorMode) {
+  const imageId = styleImageAliases[styleId] || styleId;
+
   if (colorMode === "blackGrey") {
-    return `/images/tattoo-styles/black-grey/thumbs/${styleId}.jpg`;
+    return `/images/tattoo-styles/black-grey/thumbs/${imageId}.jpg`;
   }
 
-  return `/images/tattoo-styles/thumbs/${styleId}.jpg`;
+  return `/images/tattoo-styles/thumbs/${imageId}.jpg`;
 }
 
 export function TattooFormPage() {
@@ -96,6 +105,8 @@ export function TattooFormPage() {
   const [currentStep, setCurrentStep] = useState(0);
   const [transitionDirection, setTransitionDirection] = useState("next");
   const [ideaNotice, setIdeaNotice] = useState("");
+  const [toastMessage, setToastMessage] = useState("");
+  const toastTimerRef = useRef(null);
   const [formData, setFormData] = useState(initialFormData);
   const t = translations[language];
   const direction =
@@ -103,6 +114,16 @@ export function TattooFormPage() {
   const stepId = formSteps[currentStep];
   const canGoNext = isStepValid(stepId, formData);
   const isLastStep = currentStep === formSteps.length - 1;
+
+  useEffect(() => {
+    return () => window.clearTimeout(toastTimerRef.current);
+  }, []);
+
+  function showToast(message) {
+    setToastMessage(message);
+    window.clearTimeout(toastTimerRef.current);
+    toastTimerRef.current = window.setTimeout(() => setToastMessage(""), 3200);
+  }
 
   const options = useMemo(
     () => ({
@@ -125,6 +146,9 @@ export function TattooFormPage() {
           : tattooStyles.filter((styleId) => styleId !== "blackwork"),
         t,
         (styleId) => getTattooStyleImageUrl(styleId, formData.colorMode),
+      ),
+      extraStyles: toOptions(extraTattooStyles, t, (styleId) =>
+        getTattooStyleImageUrl(styleId, formData.colorMode),
       ),
       colors: toOptions(
         colorModes,
@@ -165,23 +189,6 @@ export function TattooFormPage() {
   function goNext() {
     if (!canGoNext || isLastStep) return;
 
-    if (
-      stepId === "style" &&
-      formData.styles.includes("other") &&
-      formData.referenceImages.length === 0
-    ) {
-      const descriptionStepIndex = formSteps.indexOf("description");
-
-      setIdeaNotice(t.otherStyleNeedsReference);
-      setTransitionDirection("back");
-      setCurrentStep(descriptionStepIndex);
-      toast.error(t.otherStyleNeedsReference, {
-        position: direction === "rtl" ? "top-left" : "top-right",
-        theme: "dark",
-      });
-      return;
-    }
-
     setTransitionDirection("next");
     setCurrentStep((step) => step + 1);
   }
@@ -191,16 +198,22 @@ export function TattooFormPage() {
     setCurrentStep((step) => Math.max(0, step - 1));
   }
 
-  function submit() {
+  async function submit() {
     if (!canGoNext) return;
+
+    const { submitInquiry } = await import("./services/submitInquiry");
+    const result = await submitInquiry(formData, language);
+
+    if (result.error) {
+      showToast(result.error);
+      return;
+    }
+
     window.open(buildWhatsappUrl(formData, t), "_blank", "noopener,noreferrer");
   }
 
   function showStepError() {
-    toast.error(stepError(stepId, t), {
-      position: direction === "rtl" ? "top-left" : "top-right",
-      theme: "dark",
-    });
+    showToast(stepError(stepId, t));
   }
 
   function updatePhone(value) {
@@ -274,6 +287,9 @@ export function TattooFormPage() {
           onChange={(value) => updateFormData("styles", value)}
           multiple
           variant="styles"
+          moreLabel={t.moreStyles}
+          showLessLabel={t.showLessStyles}
+          moreOptions={options.extraStyles}
         />
       ),
       color: (
@@ -311,6 +327,7 @@ export function TattooFormPage() {
       contactTime: (
         <OptionsStep
           title={stepText.title}
+          note={stepText.note}
           options={options.contactTimes}
           value={formData.contactTimes}
           onChange={(value) => updateFormData("contactTimes", value)}
@@ -327,8 +344,12 @@ export function TattooFormPage() {
       <header className="app-topbar">
         <img
           className="topbar-logo"
-          src="/images/logo/topbar-logo-white.png"
+          src="/images/logo/topbar-logo-white.webp"
           alt="Zen House Tattoo"
+          width="150"
+          height="56"
+          decoding="async"
+          fetchPriority="high"
         />
         <ProgressBar
           currentStep={currentStep}
@@ -374,12 +395,11 @@ export function TattooFormPage() {
         </div>
       </section>
 
-      <ToastContainer
-        closeButton={false}
-        newestOnTop
-        pauseOnFocusLoss={false}
-        rtl={direction === "rtl"}
-      />
+      {toastMessage ? (
+        <div className="app-toast" role="alert">
+          {toastMessage}
+        </div>
+      ) : null}
     </main>
   );
 }

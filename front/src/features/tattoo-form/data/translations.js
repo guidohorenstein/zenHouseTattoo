@@ -19,6 +19,9 @@ export const translations = {
     referenceImages: "Reference images",
     maxReferenceImages: "Up to 4 images",
     maxPlacementBoxes: "Up to 3 marks",
+    minIdeaCharacters: "Minimum 20 characters",
+    moreStyles: "More styles",
+    showLessStyles: "Show less",
     otherStyleNeedsReference:
       "For Other style, please upload at least one reference image.",
     steps: {
@@ -46,8 +49,11 @@ export const translations = {
         title: "Mark the placement",
         note: "Drag to show size and position.",
       },
-      timing: { title: "When are you thinking?" },
-      contactTime: { title: "Best time to reach you" },
+      timing: { title: "When should we do it?" },
+      contactTime: {
+        title: "What is the best time to reach you?",
+        note: "You can choose more than one option.",
+      },
       hasTattoos: { title: "Do you already have tattoos?" },
     },
     options: {
@@ -85,6 +91,11 @@ export const translations = {
       chicano: "Chicano",
       futuristic: "Futuristic",
       lettering: "Lettering",
+      dotwork: "Dotwork",
+      microRealism: "Micro realism",
+      abstract: "Abstract",
+      floral: "Floral",
+      mandala: "Mandala",
       neoTraditional: "Neo traditional",
       newSchool: "New school",
       ornamental: "Ornamental",
@@ -107,7 +118,7 @@ export const translations = {
     },
     errors: {
       name: "Add your name, email and WhatsApp number.",
-      description: "Write at least 20 characters or upload a reference image.",
+      description: "Write at least 20 characters.",
       style: "Choose at least one style.",
       color: "Choose a color option.",
       bodyReference: "Choose a body reference.",

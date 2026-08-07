@@ -1,4 +1,5 @@
-﻿import { OptionCard } from "../components/OptionCard";
+import { useState } from "react";
+import { OptionCard } from "../components/OptionCard";
 
 export function OptionsStep({
   title,
@@ -8,8 +9,12 @@ export function OptionsStep({
   onChange,
   multiple = false,
   variant = "",
+  moreLabel = "",
+  showLessLabel = "Show less",
+  moreOptions = [],
 }) {
-  const hasImages = options.some((option) => option.imageUrl);
+  const [showMoreOptions, setShowMoreOptions] = useState(false);
+  const hasMoreOptions = moreOptions.length > 0;
 
   function handleClick(optionId) {
     if (!multiple) {
@@ -25,17 +30,16 @@ export function OptionsStep({
     onChange([...value, optionId]);
   }
 
-  return (
-    <div className="step">
-      <h1>{title}</h1>
-      {note ? <p>{note}</p> : null}
+  function renderOptions(optionList, extraClassName = "") {
+    const gridHasImages = optionList.some((option) => option.imageUrl);
 
+    return (
       <div
-        className={`options-grid ${hasImages ? "options-grid--visual" : ""} ${
+        className={`options-grid ${gridHasImages ? "options-grid--visual" : ""} ${
           variant ? `options-grid--${variant}` : ""
-        } options-grid--count-${options.length}`}
+        } options-grid--count-${optionList.length} ${extraClassName}`}
       >
-        {options.map((option) => (
+        {optionList.map((option) => (
           <OptionCard
             key={option.id}
             label={option.label}
@@ -45,7 +49,45 @@ export function OptionsStep({
           />
         ))}
       </div>
+    );
+  }
+
+  return (
+    <div className="step">
+      <h1>{title}</h1>
+      {note ? <p>{note}</p> : null}
+
+      {renderOptions(options)}
+
+      {hasMoreOptions ? (
+        <div className="more-styles">
+          {!showMoreOptions ? (
+            <button
+              className="more-styles-toggle"
+              type="button"
+              aria-expanded={false}
+              onClick={() => setShowMoreOptions(true)}
+            >
+              {moreLabel}
+              <span aria-hidden="true">+</span>
+            </button>
+          ) : null}
+
+          {showMoreOptions ? renderOptions(moreOptions, "options-grid--more") : null}
+
+          {showMoreOptions ? (
+            <button
+              className="more-styles-toggle"
+              type="button"
+              aria-expanded={true}
+              onClick={() => setShowMoreOptions(false)}
+            >
+              {showLessLabel}
+              <span aria-hidden="true">-</span>
+            </button>
+          ) : null}
+        </div>
+      ) : null}
     </div>
   );
 }
-

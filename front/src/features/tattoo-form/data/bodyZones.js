@@ -83,10 +83,7 @@ function normalizeReference(reference) {
 
 function imagePath(reference, fileName, useThumbnail = false) {
   const baseFolder = useThumbnail ? "body-references-thumbs" : "body-references";
-  const extension = useThumbnail ? ".jpg" : "";
-  const normalizedFileName = useThumbnail
-    ? fileName.replace(/\.[^.]+$/, extension)
-    : fileName;
+  const normalizedFileName = fileName.replace(/\.[^.]+$/, ".jpg");
 
   return `/images/${baseFolder}/${reference}/${normalizedFileName}`;
 }

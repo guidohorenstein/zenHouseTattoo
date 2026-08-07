@@ -10,6 +10,7 @@ export function IdeaStep({
 }) {
   const canAddImage = referenceImages.length < 4;
   const characterCount = value.length;
+  const hasEnoughCharacters = characterCount >= 20;
 
   function handleFilesChange(event) {
     const freeSlots = Math.max(0, 4 - referenceImages.length);
@@ -19,6 +20,7 @@ export function IdeaStep({
       name: file.name,
       size: file.size,
       previewUrl: URL.createObjectURL(file),
+      file,
     }));
 
     onReferenceImagesChange([...referenceImages, ...mappedFiles]);
@@ -49,9 +51,10 @@ export function IdeaStep({
           placeholder={placeholder}
           onChange={(event) => onDescriptionChange(event.target.value)}
         />
+        <span className="character-minimum">{labels.minIdeaCharacters}</span>
         <span
           className={`character-counter ${
-            characterCount > 0 && characterCount < 20 ? "is-short" : ""
+            hasEnoughCharacters ? "is-valid" : "is-short"
           }`}
         >
           {characterCount}/350

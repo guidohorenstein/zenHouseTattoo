@@ -22,7 +22,15 @@ export const tattooStyles = [
   "surrealism",
   "ornamental",
   "neoTraditional",
-  "other",
+];
+
+export const extraTattooStyles = [
+  "lettering",
+  "dotwork",
+  "microRealism",
+  "abstract",
+  "floral",
+  "mandala",
 ];
 
 export const colorModes = ["blackGrey", "color"];

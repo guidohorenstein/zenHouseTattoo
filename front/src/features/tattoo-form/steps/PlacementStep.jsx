@@ -125,7 +125,13 @@ export function PlacementStep({ title, note, imageUrl, value, onChange, labels }
             setDraggingBox(null);
           }}
         >
-          <img className="placement-image" src={imageUrl} alt="" draggable="false" />
+          <img
+            className="placement-image"
+            src={imageUrl}
+            alt=""
+            draggable="false"
+            decoding="async"
+          />
 
           {[...value, draftBox].filter(Boolean).map((box, index) => (
             <div
