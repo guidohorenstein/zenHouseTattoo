@@ -1,4 +1,6 @@
-export function OptionCard({ label, selected, onClick, imageUrl }) {
+import { CroppedImage } from "../../../components/CroppedImage";
+
+export function OptionCard({ cropData, label, selected, onClick, imageUrl }) {
   return (
     <button
       className={`option-card ${imageUrl ? "option-card--visual" : ""} ${
@@ -9,9 +11,11 @@ export function OptionCard({ label, selected, onClick, imageUrl }) {
       onClick={onClick}
     >
       {imageUrl ? (
-        <span className="option-card__media">
-          <img src={imageUrl} alt="" loading="lazy" decoding="async" />
-        </span>
+        <CroppedImage
+          className="option-card__media"
+          cropData={cropData}
+          imageUrl={imageUrl}
+        />
       ) : null}
       <span className="option-card__label">{label}</span>
     </button>

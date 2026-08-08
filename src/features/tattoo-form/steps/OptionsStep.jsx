@@ -42,6 +42,7 @@ export function OptionsStep({
         {optionList.map((option) => (
           <OptionCard
             key={option.id}
+            cropData={option.cropData}
             label={option.label}
             imageUrl={option.imageUrl}
             selected={multiple ? value.includes(option.id) : value === option.id}

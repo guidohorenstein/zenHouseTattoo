@@ -1,4 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { CroppedImage } from "../../../components/CroppedImage";
+import { normalizeCrop } from "../../../utils/cropUtils";
 import {
   deleteTattooStyle,
   listTattooStylesAdmin,
@@ -16,6 +18,8 @@ const emptyStyle = {
   sort_order: 0,
   color_image_path: "",
   black_grey_image_path: "",
+  color_crop_data: {},
+  black_grey_crop_data: {},
   colorPreviewUrl: "",
   blackGreyPreviewUrl: "",
   is_active: true,
@@ -35,7 +39,9 @@ export function StylesModule() {
   const [libraryGroupFilter, setLibraryGroupFilter] = useState("all");
   const [libraryVisibilityFilter, setLibraryVisibilityFilter] = useState("all");
   const [draggedStyleId, setDraggedStyleId] = useState("");
+  const [cropTarget, setCropTarget] = useState(null);
   const [message, setMessage] = useState("");
+  const editorRef = useRef(null);
 
   const sortedStyles = useMemo(() => sortStyles(styles), [styles]);
   const filteredLibraryStyles = useMemo(
@@ -76,6 +82,15 @@ export function StylesModule() {
   useEffect(() => {
     loadStyles();
   }, []);
+
+  useEffect(() => {
+    if (!editorOpen) return;
+
+    window.setTimeout(() => {
+      editorRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      editorRef.current?.querySelector("input, select, button")?.focus();
+    }, 0);
+  }, [editorOpen]);
 
   async function loadStyles() {
     setLoading(true);
@@ -221,6 +236,29 @@ export function StylesModule() {
     setSaving(false);
   }
 
+  async function saveStyleCrop(cropData) {
+    if (!cropTarget?.style) return;
+
+    const cropField =
+      cropTarget.mode === "blackGrey" ? "black_grey_crop_data" : "color_crop_data";
+
+    setSaving(true);
+    const result = await saveTattooStyle({
+      ...cropTarget.style,
+      [cropField]: cropData,
+    });
+
+    if (result.error) {
+      setMessage(result.error);
+    } else {
+      setCropTarget(null);
+      await loadStyles();
+      setMessage("Style framing saved.");
+    }
+
+    setSaving(false);
+  }
+
   async function moveStyle(droppedGroup, targetStyleId = "") {
     if (!draggedStyleId) return;
 
@@ -295,17 +333,22 @@ export function StylesModule() {
         {message ? <p className="admin-inline-message">{message}</p> : null}
 
         {editorOpen ? (
-          <StyleEditor
-            blackGreyFile={blackGreyFile}
-            colorFile={colorFile}
-            draft={draft}
-            onBlackGreyFileChange={setBlackGreyFile}
-            onClose={closeEditor}
-            onColorFileChange={setColorFile}
-            onSubmit={handleSubmit}
-            onUpdateDraft={updateDraft}
-            saving={saving}
-          />
+          <div className="admin-editor-modal" role="dialog" aria-modal="true">
+            <div className="admin-editor-panel-modal" ref={editorRef}>
+              <StyleEditor
+                blackGreyFile={blackGreyFile}
+                colorFile={colorFile}
+                draft={draft}
+                onBlackGreyFileChange={setBlackGreyFile}
+                onClose={closeEditor}
+                onColorFileChange={setColorFile}
+                onOpenCrop={setCropTarget}
+                onSubmit={handleSubmit}
+                onUpdateDraft={updateDraft}
+                saving={saving}
+              />
+            </div>
+          </div>
         ) : null}
 
         <div className="admin-preview-board">
@@ -318,6 +361,7 @@ export function StylesModule() {
             onEdit={editStyle}
             onHide={(style) => quickUpdate(style, { is_active: false })}
             onRemove={removeStyle}
+            onOpenCrop={setCropTarget}
             onStartDrag={setDraggedStyleId}
             styles={mainStyles}
             title="Always visible"
@@ -332,6 +376,7 @@ export function StylesModule() {
             onEdit={editStyle}
             onHide={(style) => quickUpdate(style, { is_active: false })}
             onRemove={removeStyle}
+            onOpenCrop={setCropTarget}
             onStartDrag={setDraggedStyleId}
             styles={moreStyles}
             title="Show more"
@@ -450,6 +495,25 @@ export function StylesModule() {
           ) : null}
         </div>
       </div>
+
+      {cropTarget ? (
+        <StyleCropAdjuster
+          cropData={
+            cropTarget.mode === "blackGrey"
+              ? cropTarget.style.black_grey_crop_data
+              : cropTarget.style.color_crop_data
+          }
+          imageUrl={
+            cropTarget.mode === "blackGrey"
+              ? cropTarget.style.blackGreyPreviewUrl
+              : cropTarget.style.colorPreviewUrl
+          }
+          onClose={() => setCropTarget(null)}
+          onSave={saveStyleCrop}
+          saving={saving}
+          title={`${cropTarget.style.title_en} - ${cropTarget.mode === "blackGrey" ? "Black & grey" : "Color"}`}
+        />
+      ) : null}
     </section>
   );
 }
@@ -461,6 +525,7 @@ function StyleEditor({
   onBlackGreyFileChange,
   onClose,
   onColorFileChange,
+  onOpenCrop,
   onSubmit,
   onUpdateDraft,
   saving,
@@ -537,15 +602,19 @@ function StyleEditor({
 
       <div className="admin-upload-grid">
         <ImageUploadField
+          cropData={draft.color_crop_data}
           file={colorFile}
           imageUrl={draft.colorPreviewUrl}
           label="Color image"
+          onAdjust={() => onOpenCrop({ style: draft, mode: "color" })}
           onChange={onColorFileChange}
         />
         <ImageUploadField
+          cropData={draft.black_grey_crop_data}
           file={blackGreyFile}
           imageUrl={draft.blackGreyPreviewUrl}
           label="Black & grey image"
+          onAdjust={() => onOpenCrop({ style: draft, mode: "blackGrey" })}
           onChange={onBlackGreyFileChange}
         />
       </div>
@@ -566,6 +635,7 @@ function StyleDropZone({
   onEdit,
   onHide,
   onRemove,
+  onOpenCrop,
   onStartDrag,
   styles,
   title,
@@ -594,6 +664,7 @@ function StyleDropZone({
             onEdit={onEdit}
             onHide={onHide}
             onRemove={onRemove}
+            onOpenCrop={onOpenCrop}
             onStartDrag={onStartDrag}
             style={style}
           />
@@ -613,6 +684,7 @@ function StylePreviewCard({
   onEdit,
   onHide,
   onRemove,
+  onOpenCrop,
   onStartDrag,
   style,
 }) {
@@ -633,10 +705,28 @@ function StylePreviewCard({
         onDropStyle(group, style.id);
       }}
     >
-      {imageUrl ? <img src={imageUrl} alt={label} /> : <div>No image</div>}
+      {imageUrl ? (
+        <CroppedImage
+          cropData={
+            mode === "blackGrey"
+              ? style.black_grey_crop_data
+              : style.color_crop_data
+          }
+          imageUrl={imageUrl}
+        />
+      ) : (
+        <div>No image</div>
+      )}
       <strong>{label}</strong>
       <div className="admin-card-actions">
         <button type="button" onClick={() => onEdit(style)}>Edit</button>
+        <button
+          disabled={!imageUrl}
+          type="button"
+          onClick={() => onOpenCrop({ style, mode })}
+        >
+          Adjust
+        </button>
         <button type="button" onClick={() => onHide(style)}>Hide</button>
         <button type="button" onClick={() => onRemove(style)}>Delete</button>
       </div>
@@ -644,22 +734,81 @@ function StylePreviewCard({
   );
 }
 
-function ImageUploadField({ file, imageUrl, label, onChange }) {
+function ImageUploadField({ cropData, file, imageUrl, label, onAdjust, onChange }) {
   return (
-    <label className="admin-upload-card">
-      <span>{label}</span>
-      {imageUrl ? (
-        <img src={imageUrl} alt={label} />
-      ) : (
-        <small>{file ? file.name : "No image selected yet"}</small>
-      )}
-      {file && imageUrl ? <small>New file selected: {file.name}</small> : null}
-      <input
-        accept="image/jpeg,image/png,image/webp"
-        type="file"
-        onChange={(event) => onChange(event.target.files?.[0] || null)}
-      />
-    </label>
+    <div className="admin-upload-card">
+      <label>
+        <span>{label}</span>
+        {imageUrl ? (
+          <CroppedImage cropData={cropData} imageUrl={imageUrl} />
+        ) : (
+          <small>{file ? file.name : "No image selected yet"}</small>
+        )}
+        {file && imageUrl ? <small>New file selected: {file.name}</small> : null}
+        <input
+          accept="image/jpeg,image/png,image/webp"
+          type="file"
+          onChange={(event) => onChange(event.target.files?.[0] || null)}
+        />
+      </label>
+      <button
+        className="admin-light-button"
+        disabled={!imageUrl}
+        type="button"
+        onClick={onAdjust}
+      >
+        Adjust
+      </button>
+    </div>
+  );
+}
+
+function StyleCropAdjuster({ cropData, imageUrl, onClose, onSave, saving, title }) {
+  const [draft, setDraft] = useState(normalizeCrop(cropData));
+
+  function update(field, value) {
+    setDraft((currentDraft) => normalizeCrop({ ...currentDraft, [field]: Number(value) }));
+  }
+
+  return (
+    <div className="admin-crop-modal" role="dialog" aria-modal="true">
+      <div className="admin-crop-panel">
+        <div className="admin-section-heading">
+          <div>
+            <h3>{title}</h3>
+            <p>Adjust how this style image appears in cards.</p>
+          </div>
+          <button className="admin-light-button" type="button" onClick={onClose}>
+            Close
+          </button>
+        </div>
+        <div className="admin-crop-preview">
+          <CroppedImage cropData={draft} imageUrl={imageUrl} loading="eager" />
+        </div>
+        <div className="admin-crop-controls">
+          <label>
+            Zoom
+            <input max="2.5" min="1" step="0.05" type="range" value={draft.zoom} onChange={(event) => update("zoom", event.target.value)} />
+          </label>
+          <label>
+            Horizontal
+            <input max="45" min="-45" step="1" type="range" value={draft.x} onChange={(event) => update("x", event.target.value)} />
+          </label>
+          <label>
+            Vertical
+            <input max="45" min="-45" step="1" type="range" value={draft.y} onChange={(event) => update("y", event.target.value)} />
+          </label>
+        </div>
+        <div className="admin-crop-actions">
+          <button className="admin-light-button" type="button" onClick={() => setDraft({ x: 0, y: 0, zoom: 1 })}>
+            Reset
+          </button>
+          <button className="admin-primary-light" disabled={saving} type="button" onClick={() => onSave(draft)}>
+            {saving ? "Saving..." : "Save framing"}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 

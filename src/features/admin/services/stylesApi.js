@@ -33,6 +33,8 @@ export async function saveTattooStyle(style) {
     sort_order: Number(style.sort_order) || 0,
     color_image_path: style.color_image_path || null,
     black_grey_image_path: style.black_grey_image_path || null,
+    color_crop_data: style.color_crop_data || {},
+    black_grey_crop_data: style.black_grey_crop_data || {},
     is_active: Boolean(style.is_active),
   };
 

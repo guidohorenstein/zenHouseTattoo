@@ -1946,11 +1946,17 @@ button.admin-metric {
   background: #fffaf4;
 }
 
-.admin-upload-card img {
+.admin-upload-card img,
+.admin-upload-card .cropped-image {
   width: 100%;
   aspect-ratio: 4 / 5;
   border-radius: 8px;
   object-fit: cover;
+}
+
+.admin-upload-card label {
+  display: grid;
+  gap: 7px;
 }
 
 .admin-upload-card small {
@@ -2070,11 +2076,38 @@ button.admin-metric {
 .admin-editor-drawer {
   display: grid;
   gap: 14px;
-  margin-bottom: 16px;
   border: 1px solid #d8e0ea;
   border-radius: 12px;
   background: #fbfcfe;
   padding: 16px;
+}
+
+.admin-editor-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 110;
+  display: grid;
+  place-items: center;
+  padding: 22px;
+  background: rgba(15, 23, 42, 0.48);
+}
+
+.admin-editor-panel-modal {
+  width: min(860px, 96vw);
+  max-height: 92vh;
+  overflow: auto;
+  border: 1px solid #d8e0ea;
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: 0 28px 90px rgba(15, 23, 42, 0.28);
+  padding: 14px;
+}
+
+.admin-editor-panel-modal .admin-editor-drawer,
+.admin-editor-panel-modal .admin-body-form {
+  border: 0;
+  background: transparent;
+  padding: 4px;
 }
 
 .admin-preview-board {
@@ -2172,7 +2205,7 @@ button.admin-metric {
 
 .admin-card-actions {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(52px, 1fr));
   gap: 4px;
   padding: 7px;
 }
@@ -2652,6 +2685,207 @@ button.admin-metric {
   opacity: 1;
 }
 
+.cropped-image {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  width: 100%;
+  height: 100%;
+  background: #eef2f7;
+}
+
+.cropped-image img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  will-change: transform;
+  transform-origin: center;
+}
+
+.admin-crop-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  display: grid;
+  place-items: center;
+  padding: 22px;
+  background: rgba(15, 23, 42, 0.62);
+}
+
+.admin-crop-panel {
+  display: grid;
+  gap: 16px;
+  width: min(780px, 96vw);
+  max-height: 92vh;
+  overflow: auto;
+  border: 1px solid #d8e0ea;
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: 0 28px 90px rgba(15, 23, 42, 0.28);
+  padding: 18px;
+}
+
+.admin-crop-preview {
+  overflow: hidden;
+  width: min(360px, 100%);
+  aspect-ratio: 4 / 5;
+  margin-inline: auto;
+  border: 1px solid #d8e0ea;
+  border-radius: 14px;
+  background: #eef2f7;
+}
+
+.admin-crop-controls {
+  display: grid;
+  gap: 12px;
+}
+
+.admin-crop-controls label,
+.admin-password-form label {
+  display: grid;
+  gap: 7px;
+  color: #475467;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.admin-crop-controls input[type="range"] {
+  width: 100%;
+  accent-color: #a67c52;
+}
+
+.admin-crop-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.admin-users-panel {
+  padding: 18px;
+}
+
+.admin-users-table {
+  display: grid;
+  gap: 10px;
+}
+
+.admin-user-row {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) auto minmax(320px, auto);
+  gap: 14px;
+  align-items: center;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #ffffff;
+  padding: 12px;
+}
+
+.admin-user-row strong,
+.admin-user-row span,
+.admin-user-row small {
+  display: block;
+}
+
+.admin-user-row strong {
+  color: #101820;
+}
+
+.admin-user-row span,
+.admin-user-row small {
+  color: #667085;
+}
+
+.admin-role-badge {
+  width: fit-content;
+  border: 1px solid #60a5fa;
+  border-radius: 999px;
+  color: #2563eb;
+  font-size: 0.68rem;
+  font-weight: 900;
+  padding: 5px 9px;
+  text-transform: uppercase;
+}
+
+.admin-role-badge--owner {
+  border-color: #a67c52;
+  color: #8a5c2d;
+}
+
+.admin-role-badge--viewer {
+  border-color: #94a3b8;
+  color: #475569;
+}
+
+.admin-role-badge.is-disabled {
+  border-color: #dc2626;
+  color: #dc2626;
+}
+
+.admin-user-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.admin-user-actions select {
+  min-height: 36px;
+  border: 1px solid #d6deea;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #101820;
+  font-weight: 800;
+  padding: 0 9px;
+}
+
+.admin-password-form {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) auto;
+  gap: 12px;
+  align-items: end;
+}
+
+.admin-password-form input {
+  min-height: 40px;
+  width: 100%;
+  border: 1px solid #d6deea;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #101820;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 700;
+  outline: none;
+  padding: 0 11px;
+}
+
+.admin-password-form input::placeholder {
+  color: #aeb8c7;
+}
+
+.admin-body-image-slot label {
+  display: grid;
+  gap: 7px;
+}
+
+.admin-body-image-slot .cropped-image,
+.admin-body-image-slot small {
+  aspect-ratio: 4 / 5;
+  border-radius: 8px;
+}
+
+.admin-body-reference-card .cropped-image {
+  max-height: 260px;
+  border-radius: 9px;
+}
+
+.admin-body-card-images .cropped-image {
+  aspect-ratio: 4 / 5;
+  border-radius: 8px;
+}
+
 @media (max-width: 980px) {
   .admin-app {
     grid-template-columns: 1fr;
@@ -2677,6 +2911,7 @@ button.admin-metric {
 
   .admin-filters-panel,
   .admin-library-filters,
+  .admin-user-row,
   .admin-body-grid,
   .admin-body-layout,
   .admin-request-summary,
@@ -2737,6 +2972,7 @@ button.admin-metric {
   }
 
   .admin-form-grid,
+  .admin-password-form,
   .admin-upload-grid,
   .admin-style-row,
   .admin-style-library-row,

@@ -1,5 +1,7 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { CroppedImage } from "../../../components/CroppedImage";
+import { normalizeCrop } from "../../../utils/cropUtils";
 import {
   deleteBodyArea,
   deleteBodyCategory,
@@ -44,10 +46,13 @@ export function BodyPhotosModule() {
   const [areaDraft, setAreaDraft] = useState(emptyArea);
   const [referenceEditorOpen, setReferenceEditorOpen] = useState(false);
   const [draggedBodyItem, setDraggedBodyItem] = useState(null);
+  const [cropTarget, setCropTarget] = useState(null);
+  const [entityEditorOpen, setEntityEditorOpen] = useState(false);
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const hasInitializedRef = useRef(false);
+  const entityEditorRef = useRef(null);
 
   const sortedCategories = useMemo(() => sortItems(categories), [categories]);
   const selectedCategory = sortedCategories.find((category) => category.id === selectedCategoryId);
@@ -78,14 +83,23 @@ export function BodyPhotosModule() {
     loadContent();
   }, [loadContent]);
 
+  useEffect(() => {
+    if (!entityEditorOpen) return;
+
+    window.setTimeout(() => {
+      entityEditorRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      entityEditorRef.current?.querySelector("input, select, button")?.focus();
+    }, 0);
+  }, [entityEditorOpen]);
+
   function startNewCategory() {
     setEditingKind("category");
-    setSelectedCategoryId("");
     setCategoryDraft({
       ...emptyCategory,
       sort_order: (categories.length + 1) * 10,
     });
     setAreaDraft(emptyArea);
+    setEntityEditorOpen(true);
   }
 
   function selectCategory(category) {
@@ -102,11 +116,26 @@ export function BodyPhotosModule() {
       category_id: selectedCategoryId,
       sort_order: (selectedAreas.length + 1) * 10,
     });
+    setEntityEditorOpen(true);
   }
 
   function selectArea(area) {
     setEditingKind("area");
     setAreaDraft(area);
+  }
+
+  function editCategory(category) {
+    setSelectedCategoryId(category.id);
+    setEditingKind("category");
+    setCategoryDraft(category);
+    setAreaDraft({ ...emptyArea, category_id: category.id });
+    setEntityEditorOpen(true);
+  }
+
+  function editArea(area) {
+    setEditingKind("area");
+    setAreaDraft(area);
+    setEntityEditorOpen(true);
   }
 
   async function submitCategory(event) {
@@ -121,6 +150,7 @@ export function BodyPhotosModule() {
     if (!result.error) {
       if (result.item?.id) setSelectedCategoryId(result.item.id);
       await loadContent();
+      setEntityEditorOpen(false);
     }
     setSaving(false);
   }
@@ -135,7 +165,10 @@ export function BodyPhotosModule() {
     });
 
     setMessage(result.error || "Area saved.");
-    if (!result.error) await loadContent();
+    if (!result.error) {
+      await loadContent();
+      setEntityEditorOpen(false);
+    }
     setSaving(false);
   }
 
@@ -285,6 +318,29 @@ export function BodyPhotosModule() {
     setSaving(false);
   }
 
+  async function saveCropData(cropData) {
+    if (!cropTarget?.image) return;
+
+    setSaving(true);
+    const result =
+      cropTarget.kind === "reference"
+        ? await saveBodyReferenceImage({
+            ...cropTarget.image,
+            crop_data: cropData,
+          })
+        : await saveBodyImage({
+            ...cropTarget.image,
+            crop_data: cropData,
+          });
+
+    setMessage(result.error || "Image framing saved.");
+    if (!result.error) {
+      setCropTarget(null);
+      await loadContent();
+    }
+    setSaving(false);
+  }
+
   function findImage(target, bodyReference, imageRole) {
     return images.find((image) => {
       const sameTarget =
@@ -347,6 +403,7 @@ export function BodyPhotosModule() {
                         (item) => item.body_reference === bodyReference,
                       )}
                       key={bodyReference}
+                      onAdjustImage={setCropTarget}
                       onImageChange={handleReferenceImageChange}
                     />
                   ))}
@@ -371,14 +428,15 @@ export function BodyPhotosModule() {
                     active={category.id === selectedCategoryId}
                     images={images}
                     key={category.id}
-                  onDelete={() => removeCategory(category)}
-                  onDropItem={() => moveCategory(category.id)}
-                  onDragEnd={() => setDraggedBodyItem(null)}
-                  onHide={() => hideCategory(category)}
-                  onSelect={() => selectCategory(category)}
-                  onStartDrag={() => setDraggedBodyItem({ kind: "category", id: category.id })}
-                  target={{ ...category, kind: "category" }}
-                />
+                    onDelete={() => removeCategory(category)}
+                    onDropItem={() => moveCategory(category.id)}
+                    onDragEnd={() => setDraggedBodyItem(null)}
+                    onEdit={() => editCategory(category)}
+                    onHide={() => hideCategory(category)}
+                    onSelect={() => selectCategory(category)}
+                    onStartDrag={() => setDraggedBodyItem({ kind: "category", id: category.id })}
+                    target={{ ...category, kind: "category" }}
+                  />
                 ))}
               </div>
             </div>
@@ -408,6 +466,7 @@ export function BodyPhotosModule() {
                     onDelete={() => removeArea(area)}
                     onDropItem={() => moveArea(area.id)}
                     onDragEnd={() => setDraggedBodyItem(null)}
+                    onEdit={() => editArea(area)}
                     onHide={() => hideArea(area)}
                     onSelect={() => selectArea(area)}
                     onStartDrag={() => setDraggedBodyItem({ kind: "area", id: area.id })}
@@ -419,26 +478,9 @@ export function BodyPhotosModule() {
           </div>
 
           <aside className="admin-body-editor">
-            {editingKind === "category" ? (
-              <BodyEntityEditor
-                draft={categoryDraft}
-                kind="category"
-                onChange={setCategoryDraft}
-                onSubmit={submitCategory}
-                saving={saving}
-              />
-            ) : (
-              <BodyEntityEditor
-                draft={areaDraft}
-                kind="area"
-                onChange={setAreaDraft}
-                onSubmit={submitArea}
-                saving={saving}
-              />
-            )}
-
             <ImageEditor
               images={images}
+              onAdjustImage={setCropTarget}
               onImageChange={handleImageChange}
               target={
                 editingKind === "category"
@@ -449,6 +491,31 @@ export function BodyPhotosModule() {
           </aside>
         </div>
       </div>
+
+      {cropTarget ? (
+        <CropAdjuster
+          image={cropTarget.image}
+          onClose={() => setCropTarget(null)}
+          onSave={saveCropData}
+          saving={saving}
+          title={cropTarget.title}
+        />
+      ) : null}
+
+      {entityEditorOpen ? (
+        <div className="admin-editor-modal" role="dialog" aria-modal="true">
+          <div className="admin-editor-panel-modal" ref={entityEditorRef}>
+            <BodyEntityEditor
+              draft={editingKind === "category" ? categoryDraft : areaDraft}
+              kind={editingKind}
+              onChange={editingKind === "category" ? setCategoryDraft : setAreaDraft}
+              onClose={() => setEntityEditorOpen(false)}
+              onSubmit={editingKind === "category" ? submitCategory : submitArea}
+              saving={saving}
+            />
+          </div>
+        </div>
+      ) : null}
     </section>
   );
 }
@@ -459,6 +526,7 @@ function BodyPreviewCard({
   onDelete,
   onDragEnd,
   onDropItem,
+  onEdit,
   onHide,
   onSelect,
   onStartDrag,
@@ -481,14 +549,22 @@ function BodyPreviewCard({
     >
       <button className="admin-body-card-main" type="button" onClick={onSelect}>
         <div className="admin-body-card-images">
-          {maleImage?.previewUrl ? <img src={maleImage.previewUrl} alt="" /> : <small>Male</small>}
-          {femaleImage?.previewUrl ? <img src={femaleImage.previewUrl} alt="" /> : <small>Female</small>}
+          {maleImage?.previewUrl ? (
+            <CroppedImage cropData={maleImage.crop_data} imageUrl={maleImage.previewUrl} />
+          ) : (
+            <small>Male</small>
+          )}
+          {femaleImage?.previewUrl ? (
+            <CroppedImage cropData={femaleImage.crop_data} imageUrl={femaleImage.previewUrl} />
+          ) : (
+            <small>Female</small>
+          )}
         </div>
         <strong>{target.title_en || "Untitled"}</strong>
         <span>{target.is_active ? "Visible" : "Hidden"}</span>
       </button>
       <div className="admin-card-actions">
-        <button type="button" onClick={onSelect}>Edit</button>
+        <button type="button" onClick={onEdit}>Edit</button>
         <button type="button" onClick={onHide}>{target.is_active ? "Hide" : "Show"}</button>
         <button type="button" onClick={onDelete}>Delete</button>
       </div>
@@ -499,13 +575,17 @@ function BodyPreviewCard({
 function ReferencePreviewCard({ bodyReference, image }) {
   return (
     <article className="admin-body-reference-card">
-      {image?.previewUrl ? <img src={image.previewUrl} alt="" /> : <small>No image</small>}
+      {image?.previewUrl ? (
+        <CroppedImage cropData={image.crop_data} imageUrl={image.previewUrl} />
+      ) : (
+        <small>No image</small>
+      )}
       <strong>{bodyReference}</strong>
     </article>
   );
 }
 
-function BodyEntityEditor({ draft, kind, onChange, onSubmit, saving }) {
+function BodyEntityEditor({ draft, kind, onChange, onClose, onSubmit, saving }) {
   return (
     <form className="admin-body-form" onSubmit={onSubmit}>
       <div className="admin-section-heading admin-section-heading--tight">
@@ -513,6 +593,9 @@ function BodyEntityEditor({ draft, kind, onChange, onSubmit, saving }) {
           <h3>{draft.id ? `Edit ${kind}` : `New ${kind}`}</h3>
           <p>Title, order and visibility.</p>
         </div>
+        <button className="admin-light-button" type="button" onClick={onClose}>
+          Close
+        </button>
       </div>
       <div className="admin-form-grid">
         <label>
@@ -574,7 +657,7 @@ function BodyEntityEditor({ draft, kind, onChange, onSubmit, saving }) {
   );
 }
 
-function ImageEditor({ images, onImageChange, target }) {
+function ImageEditor({ images, onImageChange, onAdjustImage, target }) {
   if (!target.id) {
     return (
       <div className="admin-body-image-editor">
@@ -594,6 +677,7 @@ function ImageEditor({ images, onImageChange, target }) {
             image={getImage(images, target, bodyReference, "card")}
             imageRole="card"
             key={`${bodyReference}-card`}
+            onAdjustImage={onAdjustImage}
             onImageChange={onImageChange}
             target={target}
           />
@@ -604,6 +688,7 @@ function ImageEditor({ images, onImageChange, target }) {
             image={getImage(images, target, bodyReference, "placement")}
             imageRole="placement"
             key={`${bodyReference}-placement`}
+            onAdjustImage={onAdjustImage}
             onImageChange={onImageChange}
             target={target}
           />
@@ -613,25 +698,45 @@ function ImageEditor({ images, onImageChange, target }) {
   );
 }
 
-function ImageSlot({ bodyReference, image, imageRole, onImageChange, target }) {
+function ImageSlot({ bodyReference, image, imageRole, onAdjustImage, onImageChange, target }) {
   return (
-    <label className="admin-body-image-slot">
-      <span>
-        {bodyReference} / {imageRole}
-      </span>
-      {image?.previewUrl ? <img src={image.previewUrl} alt="" /> : <small>No image</small>}
-      <input
-        accept="image/jpeg,image/png,image/webp"
-        type="file"
-        onChange={(event) =>
-          onImageChange(target, bodyReference, imageRole, event.target.files?.[0])
+    <div className="admin-body-image-slot">
+      <label>
+        <span>
+          {bodyReference} / {imageRole}
+        </span>
+        {image?.previewUrl ? (
+          <CroppedImage cropData={image.crop_data} imageUrl={image.previewUrl} />
+        ) : (
+          <small>No image</small>
+        )}
+        <input
+          accept="image/jpeg,image/png,image/webp"
+          type="file"
+          onChange={(event) =>
+            onImageChange(target, bodyReference, imageRole, event.target.files?.[0])
+          }
+        />
+      </label>
+      <button
+        className="admin-light-button"
+        disabled={!image?.previewUrl}
+        type="button"
+        onClick={() =>
+          onAdjustImage({
+            image,
+            kind: "body",
+            title: `${target.title_en} - ${bodyReference} ${imageRole}`,
+          })
         }
-      />
-    </label>
+      >
+        Adjust
+      </button>
+    </div>
   );
 }
 
-function ReferenceImageSlot({ bodyReference, image, onImageChange }) {
+function ReferenceImageSlot({ bodyReference, image, onAdjustImage, onImageChange }) {
   const [selectedFile, setSelectedFile] = useState(null);
 
   async function handleSave() {
@@ -644,7 +749,11 @@ function ReferenceImageSlot({ bodyReference, image, onImageChange }) {
     <div className="admin-body-image-slot admin-body-image-slot--confirm">
       <label>
         <span>{bodyReference}</span>
-        {image?.previewUrl ? <img src={image.previewUrl} alt="" /> : <small>No image</small>}
+        {image?.previewUrl ? (
+          <CroppedImage cropData={image.crop_data} imageUrl={image.previewUrl} />
+        ) : (
+          <small>No image</small>
+        )}
         <input
           accept="image/jpeg,image/png,image/webp"
           type="file"
@@ -660,6 +769,93 @@ function ReferenceImageSlot({ bodyReference, image, onImageChange }) {
       >
         Save body reference
       </button>
+      <button
+        className="admin-light-button"
+        disabled={!image?.previewUrl}
+        type="button"
+        onClick={() =>
+          onAdjustImage({
+            image,
+            kind: "reference",
+            title: `${bodyReference} body reference`,
+          })
+        }
+      >
+        Adjust
+      </button>
+    </div>
+  );
+}
+
+function CropAdjuster({ image, onClose, onSave, saving, title }) {
+  const [draft, setDraft] = useState(normalizeCrop(image.crop_data));
+
+  function update(field, value) {
+    setDraft((currentDraft) => normalizeCrop({ ...currentDraft, [field]: Number(value) }));
+  }
+
+  return (
+    <div className="admin-crop-modal" role="dialog" aria-modal="true">
+      <div className="admin-crop-panel">
+        <div className="admin-section-heading">
+          <div>
+            <h3>{title}</h3>
+            <p>Adjust zoom and position. This changes how the image is framed in cards.</p>
+          </div>
+          <button className="admin-light-button" type="button" onClick={onClose}>
+            Close
+          </button>
+        </div>
+
+        <div className="admin-crop-preview">
+          <CroppedImage cropData={draft} imageUrl={image.previewUrl} loading="eager" />
+        </div>
+
+        <div className="admin-crop-controls">
+          <label>
+            Zoom
+            <input
+              max="2.5"
+              min="1"
+              step="0.05"
+              type="range"
+              value={draft.zoom}
+              onChange={(event) => update("zoom", event.target.value)}
+            />
+          </label>
+          <label>
+            Horizontal
+            <input
+              max="45"
+              min="-45"
+              step="1"
+              type="range"
+              value={draft.x}
+              onChange={(event) => update("x", event.target.value)}
+            />
+          </label>
+          <label>
+            Vertical
+            <input
+              max="45"
+              min="-45"
+              step="1"
+              type="range"
+              value={draft.y}
+              onChange={(event) => update("y", event.target.value)}
+            />
+          </label>
+        </div>
+
+        <div className="admin-crop-actions">
+          <button className="admin-light-button" type="button" onClick={() => setDraft({ x: 0, y: 0, zoom: 1 })}>
+            Reset
+          </button>
+          <button className="admin-primary-light" disabled={saving} type="button" onClick={() => onSave(draft)}>
+            {saving ? "Saving..." : "Save framing"}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

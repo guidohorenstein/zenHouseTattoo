@@ -3,6 +3,7 @@ const navItems = [
   { id: "requests", label: "Requests" },
   { id: "styles", label: "Styles" },
   { id: "body", label: "Body photos" },
+  { id: "users", label: "Users" },
   { id: "settings", label: "Settings" },
 ];
 

@@ -97,11 +97,15 @@ function toRemoteStyleOptions(styles, language, colorMode) {
         colorMode === "blackGrey"
           ? style.blackGreyPreviewUrl
           : style.colorPreviewUrl,
+      cropData:
+        colorMode === "blackGrey"
+          ? style.black_grey_crop_data
+          : style.color_crop_data,
     }));
 }
 
-function getRemoteBodyImageUrl(bodyPhotos, { areaId, bodyReference, categoryId, imageRole }) {
-  const image = bodyPhotos.images.find((item) => {
+function getRemoteBodyImage(bodyPhotos, { areaId, bodyReference, categoryId, imageRole }) {
+  return bodyPhotos.images.find((item) => {
     const matchesTarget = areaId
       ? item.body_area_id === areaId
       : item.category_id === categoryId;
@@ -112,16 +116,20 @@ function getRemoteBodyImageUrl(bodyPhotos, { areaId, bodyReference, categoryId, 
       item.image_role === imageRole
     );
   });
+}
 
-  return image?.previewUrl || "";
+function getRemoteBodyImageUrl(bodyPhotos, options) {
+  return getRemoteBodyImage(bodyPhotos, options)?.previewUrl || "";
+}
+
+function getRemoteBodyReferenceImage(bodyPhotos, bodyReference) {
+  return bodyPhotos.referenceImages.find(
+    (item) => item.body_reference === bodyReference,
+  );
 }
 
 function getRemoteBodyReferenceImageUrl(bodyPhotos, bodyReference) {
-  const image = bodyPhotos.referenceImages.find(
-    (item) => item.body_reference === bodyReference,
-  );
-
-  return image?.previewUrl || "";
+  return getRemoteBodyReferenceImage(bodyPhotos, bodyReference)?.previewUrl || "";
 }
 
 export function TattooFormPage() {
@@ -204,37 +212,48 @@ export function TattooFormPage() {
   const options = useMemo(
     () => {
       const hasRemoteBodyPhotos = remoteBodyPhotos.categories.length > 0;
-      const remoteCategoryOptions = remoteBodyPhotos.categories.map((category) => ({
-        id: category.slug,
-        label: language === "he" ? category.title_he : category.title_en,
-        imageUrl:
-          getRemoteBodyImageUrl(remoteBodyPhotos, {
-            categoryId: category.id,
-            bodyReference: formData.bodyReference,
-            imageRole: "card",
-          }),
-      }));
+      const remoteCategoryOptions = remoteBodyPhotos.categories.map((category) => {
+        const image = getRemoteBodyImage(remoteBodyPhotos, {
+          categoryId: category.id,
+          bodyReference: formData.bodyReference,
+          imageRole: "card",
+        });
+
+        return {
+          id: category.slug,
+          label: language === "he" ? category.title_he : category.title_en,
+          imageUrl: image?.previewUrl || "",
+          cropData: image?.crop_data,
+        };
+      });
       const selectedRemoteCategory = remoteBodyPhotos.categories.find(
         (category) => category.slug === formData.generalZone,
       );
       const remoteAreaOptions = remoteBodyPhotos.areas
         .filter((area) => area.category_id === selectedRemoteCategory?.id)
-        .map((area) => ({
-          id: area.slug,
-          label: language === "he" ? area.title_he : area.title_en,
-          imageUrl:
-            getRemoteBodyImageUrl(remoteBodyPhotos, {
-              areaId: area.id,
-              bodyReference: formData.bodyReference,
-              imageRole: "card",
-            }),
-        }));
+        .map((area) => {
+          const image = getRemoteBodyImage(remoteBodyPhotos, {
+            areaId: area.id,
+            bodyReference: formData.bodyReference,
+            imageRole: "card",
+          });
+
+          return {
+            id: area.slug,
+            label: language === "he" ? area.title_he : area.title_en,
+            imageUrl: image?.previewUrl || "",
+            cropData: image?.crop_data,
+          };
+        });
 
       return {
         bodyReference: toOptions(["male", "female"], t, (referenceId) =>
           getRemoteBodyReferenceImageUrl(remoteBodyPhotos, referenceId) ||
           getBodyReferenceImageUrl(referenceId),
-        ),
+        ).map((option) => ({
+          ...option,
+          cropData: getRemoteBodyReferenceImage(remoteBodyPhotos, option.id)?.crop_data,
+        })),
       hasTattoos: toOptions(["yes", "no"], t),
       generalZones: hasRemoteBodyPhotos
         ? remoteCategoryOptions

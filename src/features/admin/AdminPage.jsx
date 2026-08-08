@@ -17,6 +17,7 @@ import { BodyPhotosModule } from "./modules/BodyPhotosModule";
 import { PlaceholderModule } from "./modules/PlaceholderModule";
 import { RequestsModule } from "./modules/RequestsModule";
 import { StylesModule } from "./modules/StylesModule";
+import { UsersModule } from "./modules/UsersModule";
 
 export function AdminPage() {
   const [session, setSession] = useState(null);
@@ -223,6 +224,10 @@ export function AdminPage() {
 
       {activeModule === "body" ? (
         <BodyPhotosModule />
+      ) : null}
+
+      {activeModule === "users" ? (
+        <UsersModule currentUserEmail={session.user.email} />
       ) : null}
 
       {activeModule === "settings" ? (
