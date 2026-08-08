@@ -46,7 +46,11 @@ export async function inviteAdminUser({ email, displayName, role }) {
     role,
   });
 
-  return { user: result.data?.user || null, error: result.error };
+  return {
+    emailMode: result.data?.emailMode || "",
+    user: result.data?.user || null,
+    error: result.error,
+  };
 }
 
 export async function updateAdminUser(profileId, patch) {

@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { hasSupabaseConfig } from "../../lib/supabaseClient";
 import { AdminShell } from "./components/AdminShell";
-import { getCurrentAdminSession, signInAdmin, signOutAdmin } from "./services/adminAuth";
+import { getCurrentAdminSession, onAdminAuthChange, signInAdmin, signOutAdmin } from "./services/adminAuth";
 import {
   addInquiryNote,
   deleteInquiry,
@@ -67,6 +67,13 @@ export function AdminPage() {
     }
 
     loadSession();
+
+    return onAdminAuthChange((result) => {
+      setSession(result.session);
+      setAdminProfile(result.profile);
+      setError(result.error || "");
+      setLoading(false);
+    });
   }, []);
 
   useEffect(() => {

@@ -19,6 +19,26 @@ export async function getCurrentAdminSession() {
   return { session, profile, error: error?.message || null };
 }
 
+export function onAdminAuthChange(callback) {
+  if (!hasSupabaseConfig) return () => {};
+
+  const { data } = supabase.auth.onAuthStateChange(async (_event, nextSession) => {
+    if (!nextSession) {
+      callback({ session: null, profile: null, error: null });
+      return;
+    }
+
+    const profile = await getAdminProfile(nextSession.user.id);
+    callback({
+      session: profile ? nextSession : null,
+      profile,
+      error: profile ? null : "This email is not allowed to access admin.",
+    });
+  });
+
+  return () => data.subscription.unsubscribe();
+}
+
 export async function signInAdmin(email, password) {
   if (!hasSupabaseConfig) {
     return { session: null, error: "Supabase is not configured yet." };

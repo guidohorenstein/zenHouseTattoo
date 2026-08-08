@@ -53,7 +53,11 @@ export function UsersModule({ currentUserEmail }) {
     } else {
       setInviteDraft(emptyInvite);
       setInviteOpen(false);
-      setMessage("Invitation sent and admin profile saved.");
+      setMessage(
+        result.emailMode === "invite"
+          ? "Invitation sent and admin profile saved."
+          : "Admin access restored. A password setup email was sent.",
+      );
       await loadUsers();
     }
 

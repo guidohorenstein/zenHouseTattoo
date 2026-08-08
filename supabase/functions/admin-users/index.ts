@@ -7,6 +7,7 @@ const ALLOWED_ORIGINS = [
   "https://www.zenhousetattoo.com",
 ];
 const VALID_ROLES = new Set(["owner", "admin", "viewer"]);
+const ADMIN_REDIRECT_URL = "https://zenhousetattoo.com/admin";
 
 function getAllowedOrigin(request: Request) {
   const origin = request.headers.get("origin") || "";
@@ -97,6 +98,31 @@ function isOwner(currentAdmin: { role?: string; is_super_admin?: boolean } | nul
   return Boolean(currentAdmin?.is_super_admin || currentAdmin?.role === "owner");
 }
 
+async function findAuthUserByEmail(
+  serviceClient: ReturnType<typeof createClient>,
+  email: string,
+) {
+  let page = 1;
+  const perPage = 100;
+
+  while (page <= 10) {
+    const { data, error } = await serviceClient.auth.admin.listUsers({
+      page,
+      perPage,
+    });
+
+    if (error) return { user: null, error };
+
+    const user = data.users.find((item) => item.email?.toLowerCase() === email);
+    if (user) return { user, error: null };
+    if (data.users.length < perPage) break;
+
+    page += 1;
+  }
+
+  return { user: null, error: null };
+}
+
 Deno.serve(async (request) => {
   const allowedOrigin = getAllowedOrigin(request);
 
@@ -156,19 +182,26 @@ Deno.serve(async (request) => {
 
     if (!isValidEmail(email)) return jsonResponse(request, { error: "Valid email is required." }, 400);
 
-    const { data: createdUser, error: createError } =
-      await serviceClient.auth.admin.inviteUserByEmail(email, {
-        redirectTo: "https://zenhousetattoo.com/admin",
-      });
-
-    if (createError && !createError.message.toLowerCase().includes("already")) {
-      return jsonResponse(request, { error: createError.message }, 400);
+    const existingUserResult = await findAuthUserByEmail(serviceClient, email);
+    if (existingUserResult.error) {
+      return jsonResponse(request, { error: existingUserResult.error.message }, 500);
     }
 
-    let userId = createdUser.user?.id || "";
-    if (!userId) {
-      const { data: listedUsers } = await serviceClient.auth.admin.listUsers();
-      userId = listedUsers.users.find((user) => user.email?.toLowerCase() === email)?.id || "";
+    let userId = existingUserResult.user?.id || "";
+    let emailMode = "password-reset";
+
+    if (!existingUserResult.user) {
+      const { data: createdUser, error: createError } =
+        await serviceClient.auth.admin.inviteUserByEmail(email, {
+          redirectTo: ADMIN_REDIRECT_URL,
+        });
+
+      if (createError) {
+        return jsonResponse(request, { error: createError.message }, 400);
+      }
+
+      userId = createdUser.user?.id || "";
+      emailMode = "invite";
     }
 
     if (!userId) return jsonResponse(request, { error: "Could not find invited user." }, 500);
@@ -189,7 +222,21 @@ Deno.serve(async (request) => {
       .select("id, email, display_name, role, is_super_admin, is_active, created_at, last_sign_in_at")
       .single();
 
-    return jsonResponse(request, { user: profile, error: profileError?.message || null }, profileError ? 500 : 200);
+    if (profileError) {
+      return jsonResponse(request, { user: null, error: profileError.message }, 500);
+    }
+
+    if (existingUserResult.user) {
+      const { error: resetError } = await serviceClient.auth.resetPasswordForEmail(email, {
+        redirectTo: ADMIN_REDIRECT_URL,
+      });
+
+      if (resetError) {
+        return jsonResponse(request, { user: profile, error: resetError.message }, 400);
+      }
+    }
+
+    return jsonResponse(request, { user: profile, emailMode, error: null });
   }
 
   if (action === "update") {
@@ -237,7 +284,7 @@ Deno.serve(async (request) => {
     if (!isValidEmail(email)) return jsonResponse(request, { error: "Valid email is required." }, 400);
 
     const { error } = await serviceClient.auth.resetPasswordForEmail(email, {
-      redirectTo: "https://zenhousetattoo.com/admin",
+      redirectTo: ADMIN_REDIRECT_URL,
     });
 
     return jsonResponse(request, { error: error?.message || null }, error ? 500 : 200);
