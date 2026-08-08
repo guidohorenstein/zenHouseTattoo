@@ -18,9 +18,11 @@ import { PlaceholderModule } from "./modules/PlaceholderModule";
 import { RequestsModule } from "./modules/RequestsModule";
 import { StylesModule } from "./modules/StylesModule";
 import { UsersModule } from "./modules/UsersModule";
+import { getAdminPermissions } from "./utils/adminPermissions";
 
 export function AdminPage() {
   const [session, setSession] = useState(null);
+  const [adminProfile, setAdminProfile] = useState(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(true);
@@ -59,6 +61,7 @@ export function AdminPage() {
     async function loadSession() {
       const result = await getCurrentAdminSession();
       setSession(result.session);
+      setAdminProfile(result.profile);
       setError(result.error || "");
       setLoading(false);
     }
@@ -78,6 +81,7 @@ export function AdminPage() {
 
     const result = await signInAdmin(email, password);
     setSession(result.session);
+    setAdminProfile(result.profile);
     setError(result.error || "");
     setLoading(false);
   }
@@ -85,6 +89,7 @@ export function AdminPage() {
   async function handleLogout() {
     await signOutAdmin();
     setSession(null);
+    setAdminProfile(null);
   }
 
   function handleDrillDown(filter) {
@@ -97,6 +102,11 @@ export function AdminPage() {
   }
 
   async function handleStatusChange(inquiry, nextStatus) {
+    if (!permissions.canEditRequests) {
+      setError("Viewer users can only read requests.");
+      return;
+    }
+
     const result = await updateInquiryStatus(inquiry, nextStatus, session.user.id);
 
     if (result.error) {
@@ -108,6 +118,11 @@ export function AdminPage() {
   }
 
   async function handleDiscard(inquiry) {
+    if (!permissions.canEditRequests) {
+      setError("Viewer users can only read requests.");
+      return;
+    }
+
     const result = await discardInquiry(inquiry, session.user.id);
 
     if (result.error) {
@@ -119,6 +134,11 @@ export function AdminPage() {
   }
 
   async function handleDelete(inquiry) {
+    if (!permissions.canEditRequests) {
+      setError("Viewer users can only read requests.");
+      return;
+    }
+
     const confirmed = window.confirm(`Delete request from ${inquiry.full_name}? This cannot be undone.`);
     if (!confirmed) return;
 
@@ -135,6 +155,11 @@ export function AdminPage() {
 
   async function handleAddNote(event, inquiryId) {
     event.preventDefault();
+
+    if (!permissions.canEditRequests) {
+      setError("Viewer users can only read requests.");
+      return;
+    }
 
     const result = await addInquiryNote(inquiryId, session.user.id, noteText);
 
@@ -182,6 +207,8 @@ export function AdminPage() {
     );
   }
 
+  const permissions = getAdminPermissions(adminProfile);
+
   return (
     <AdminShell
       activeModule={activeModule}
@@ -214,16 +241,17 @@ export function AdminPage() {
           onNoteTextChange={setNoteText}
           onRequestDetail={loadInquiryDetail}
           onStatusChange={handleStatusChange}
+          permissions={permissions}
           selectedDetail={selectedDetail}
         />
       ) : null}
 
       {activeModule === "styles" ? (
-        <StylesModule />
+        <StylesModule canEdit={permissions.canEditStyles} />
       ) : null}
 
       {activeModule === "body" ? (
-        <BodyPhotosModule />
+        <BodyPhotosModule canEdit={permissions.canEditBodyPhotos} />
       ) : null}
 
       {activeModule === "users" ? (

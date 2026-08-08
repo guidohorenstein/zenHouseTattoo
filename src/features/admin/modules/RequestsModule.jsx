@@ -33,6 +33,7 @@ export function RequestsModule({
   onNoteTextChange,
   onRequestDetail,
   onStatusChange,
+  permissions,
 }) {
   const [filters, setFilters] = useState(emptyFilters);
   const [expandedId, setExpandedId] = useState("");
@@ -202,6 +203,7 @@ export function RequestsModule({
             onImagePreview={setPreviewImage}
             onNoteTextChange={onNoteTextChange}
             onStatusChange={onStatusChange}
+            permissions={permissions}
             onToggle={() => toggleInquiry(inquiry.id)}
           />
         ))}
@@ -226,6 +228,7 @@ function RequestCard({
   onImagePreview,
   onNoteTextChange,
   onStatusChange,
+  permissions,
   onToggle,
 }) {
   return (
@@ -259,6 +262,7 @@ function RequestCard({
               onImagePreview={onImagePreview}
               onNoteTextChange={onNoteTextChange}
               onStatusChange={onStatusChange}
+              permissions={permissions}
             />
           ) : null}
         </div>
@@ -276,6 +280,7 @@ function RequestDetail({
   onImagePreview,
   onNoteTextChange,
   onStatusChange,
+  permissions,
 }) {
   const inquiry = detail.inquiry;
 
@@ -315,6 +320,7 @@ function RequestDetail({
             {inquiryStatuses.map((status) => (
               <button
                 className={`admin-chip admin-chip--${status} ${inquiry.status === status ? "is-active" : ""}`}
+                disabled={!permissions?.canEditRequests}
                 key={status}
                 title={statusDescriptions[status]}
                 type="button"
@@ -325,8 +331,8 @@ function RequestDetail({
             ))}
           </div>
           <div className="admin-danger-actions">
-            <button type="button" onClick={() => onDiscard(inquiry)}>Discard request</button>
-            <button type="button" onClick={() => onDelete(inquiry)}>Delete permanently</button>
+            <button disabled={!permissions?.canEditRequests} type="button" onClick={() => onDiscard(inquiry)}>Discard request</button>
+            <button disabled={!permissions?.canEditRequests} type="button" onClick={() => onDelete(inquiry)}>Delete permanently</button>
           </div>
         </section>
 
@@ -346,11 +352,12 @@ function RequestDetail({
           <h4>Internal notes</h4>
           <form className="admin-note-form admin-note-form--light" onSubmit={(event) => onAddNote(event, inquiry.id)}>
             <textarea
+              disabled={!permissions?.canEditRequests}
               value={noteText}
-              placeholder="Add a private note..."
+              placeholder={permissions?.canEditRequests ? "Add a private note..." : "Viewer mode: notes are read-only"}
               onChange={(event) => onNoteTextChange(event.target.value)}
             />
-            <button className="admin-primary-light" type="submit">Add note</button>
+            <button className="admin-primary-light" disabled={!permissions?.canEditRequests} type="submit">Add note</button>
           </form>
           <Timeline emptyText="No notes yet." items={detail.notes.map((note) => ({ id: note.id, text: note.note, date: note.created_at }))} />
         </section>

@@ -5,13 +5,18 @@ export async function getCurrentAdminSession() {
 
   const { data, error } = await supabase.auth.getSession();
   const session = data?.session || null;
+  let profile = null;
 
-  if (session && !(await isActiveAdmin(session.user.id))) {
+  if (session) {
+    profile = await getAdminProfile(session.user.id);
+  }
+
+  if (session && !profile) {
     await supabase.auth.signOut();
     return { session: null, error: "This email is not allowed to access admin." };
   }
 
-  return { session, error: error?.message || null };
+  return { session, profile, error: error?.message || null };
 }
 
 export async function signInAdmin(email, password) {
@@ -28,18 +33,13 @@ export async function signInAdmin(email, password) {
     return { session: null, error: error?.message || "Could not login." };
   }
 
-  const hasAccess = await isActiveAdmin(data.session.user.id);
-  if (!hasAccess) {
+  const profile = await getAdminProfile(data.session.user.id);
+  if (!profile) {
     await supabase.auth.signOut();
     return { session: null, error: "This email is not allowed to access admin." };
   }
 
-  await supabase
-    .from("admin_profiles")
-    .update({ last_sign_in_at: new Date().toISOString() })
-    .eq("id", data.session.user.id);
-
-  return { session: data.session, error: null };
+  return { session: data.session, profile, error: null };
 }
 
 export async function signOutAdmin() {
@@ -68,13 +68,13 @@ export async function updateCurrentAdminPassword(password) {
   return { error: error?.message || null };
 }
 
-async function isActiveAdmin(userId) {
+async function getAdminProfile(userId) {
   const { data, error } = await supabase
     .from("admin_profiles")
-    .select("id")
+    .select("id, email, display_name, role, is_super_admin, is_active")
     .eq("id", userId)
     .eq("is_active", true)
     .maybeSingle();
 
-  return Boolean(data && !error);
+  return !error ? data : null;
 }

@@ -1982,6 +1982,21 @@ button.admin-metric {
   font-weight: 800;
 }
 
+.admin-readonly-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  width: fit-content;
+  border: 1px solid #cbd5e1;
+  border-radius: 999px;
+  color: #475569;
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  padding: 0 11px;
+  text-transform: uppercase;
+}
+
 .admin-style-list {
   display: grid;
   gap: 10px;
@@ -2512,7 +2527,7 @@ button.admin-metric {
 
 .admin-body-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 360px;
+  grid-template-columns: minmax(0, 1fr);
   gap: 16px;
   align-items: start;
 }
@@ -2521,11 +2536,8 @@ button.admin-metric {
 .admin-body-editor,
 .admin-body-selected-preview {
   display: grid;
-  gap: 14px;
-  border: 1px solid #e3e8f0;
-  border-radius: 12px;
-  background: #fbfcfe;
-  padding: 14px;
+  gap: 16px;
+  min-width: 0;
 }
 
 .admin-body-flow-card {
@@ -2545,14 +2557,14 @@ button.admin-metric {
 .admin-body-category-grid,
 .admin-body-area-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 14px;
 }
 
 .admin-body-reference-cards {
   display: grid;
-  grid-template-columns: repeat(2, minmax(140px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(2, minmax(220px, 1fr));
+  gap: 14px;
 }
 
 .admin-body-reference-card {

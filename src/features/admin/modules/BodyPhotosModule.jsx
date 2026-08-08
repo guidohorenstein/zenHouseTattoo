@@ -35,7 +35,7 @@ const emptyArea = {
   is_active: true,
 };
 
-export function BodyPhotosModule() {
+export function BodyPhotosModule({ canEdit = true }) {
   const [categories, setCategories] = useState([]);
   const [areas, setAreas] = useState([]);
   const [images, setImages] = useState([]);
@@ -44,10 +44,11 @@ export function BodyPhotosModule() {
   const [editingKind, setEditingKind] = useState("category");
   const [categoryDraft, setCategoryDraft] = useState(emptyCategory);
   const [areaDraft, setAreaDraft] = useState(emptyArea);
-  const [referenceEditorOpen, setReferenceEditorOpen] = useState(false);
   const [draggedBodyItem, setDraggedBodyItem] = useState(null);
   const [cropTarget, setCropTarget] = useState(null);
   const [entityEditorOpen, setEntityEditorOpen] = useState(false);
+  const [referenceEditorOpenModal, setReferenceEditorOpenModal] = useState(false);
+  const [pendingEntityFiles, setPendingEntityFiles] = useState({});
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -93,12 +94,15 @@ export function BodyPhotosModule() {
   }, [entityEditorOpen]);
 
   function startNewCategory() {
+    if (!canEdit) return;
+
     setEditingKind("category");
     setCategoryDraft({
       ...emptyCategory,
       sort_order: (categories.length + 1) * 10,
     });
     setAreaDraft(emptyArea);
+    setPendingEntityFiles({});
     setEntityEditorOpen(true);
   }
 
@@ -110,12 +114,15 @@ export function BodyPhotosModule() {
   }
 
   function startNewArea() {
+    if (!canEdit) return;
+
     setEditingKind("area");
     setAreaDraft({
       ...emptyArea,
       category_id: selectedCategoryId,
       sort_order: (selectedAreas.length + 1) * 10,
     });
+    setPendingEntityFiles({});
     setEntityEditorOpen(true);
   }
 
@@ -125,21 +132,29 @@ export function BodyPhotosModule() {
   }
 
   function editCategory(category) {
+    if (!canEdit) return;
+
     setSelectedCategoryId(category.id);
     setEditingKind("category");
     setCategoryDraft(category);
     setAreaDraft({ ...emptyArea, category_id: category.id });
+    setPendingEntityFiles({});
     setEntityEditorOpen(true);
   }
 
   function editArea(area) {
+    if (!canEdit) return;
+
     setEditingKind("area");
     setAreaDraft(area);
+    setPendingEntityFiles({});
     setEntityEditorOpen(true);
   }
 
   async function submitCategory(event) {
     event.preventDefault();
+    if (!canEdit) return;
+
     setSaving(true);
     const result = await saveBodyCategory({
       ...categoryDraft,
@@ -149,6 +164,9 @@ export function BodyPhotosModule() {
     setMessage(result.error || "Category saved.");
     if (!result.error) {
       if (result.item?.id) setSelectedCategoryId(result.item.id);
+      if (result.item?.id) {
+        await uploadPendingEntityImages({ ...result.item, kind: "category" });
+      }
       await loadContent();
       setEntityEditorOpen(false);
     }
@@ -157,6 +175,8 @@ export function BodyPhotosModule() {
 
   async function submitArea(event) {
     event.preventDefault();
+    if (!canEdit) return;
+
     setSaving(true);
     const result = await saveBodyArea({
       ...areaDraft,
@@ -166,6 +186,9 @@ export function BodyPhotosModule() {
 
     setMessage(result.error || "Area saved.");
     if (!result.error) {
+      if (result.item?.id) {
+        await uploadPendingEntityImages({ ...result.item, kind: "area" });
+      }
       await loadContent();
       setEntityEditorOpen(false);
     }
@@ -173,10 +196,12 @@ export function BodyPhotosModule() {
   }
 
   async function hideCategory(category) {
+    if (!canEdit) return;
     await quickSaveCategory({ ...category, is_active: !category.is_active });
   }
 
   async function hideArea(area) {
+    if (!canEdit) return;
     await quickSaveArea({ ...area, is_active: !area.is_active });
   }
 
@@ -197,6 +222,8 @@ export function BodyPhotosModule() {
   }
 
   async function removeCategory(category) {
+    if (!canEdit) return;
+
     const confirmed = window.confirm(`Delete ${category.title_en}? This also deletes its areas.`);
     if (!confirmed) return;
 
@@ -213,6 +240,8 @@ export function BodyPhotosModule() {
   }
 
   async function removeArea(area) {
+    if (!canEdit) return;
+
     const confirmed = window.confirm(`Delete ${area.title_en}?`);
     if (!confirmed) return;
 
@@ -227,6 +256,7 @@ export function BodyPhotosModule() {
   }
 
   async function moveCategory(targetCategoryId) {
+    if (!canEdit) return;
     if (draggedBodyItem?.kind !== "category" || !targetCategoryId) return;
 
     const reordered = reorderItems(sortedCategories, draggedBodyItem.id, targetCategoryId);
@@ -244,6 +274,7 @@ export function BodyPhotosModule() {
   }
 
   async function moveArea(targetAreaId) {
+    if (!canEdit) return;
     if (draggedBodyItem?.kind !== "area" || !targetAreaId) return;
 
     const reordered = reorderItems(selectedAreas, draggedBodyItem.id, targetAreaId);
@@ -261,6 +292,7 @@ export function BodyPhotosModule() {
   }
 
   async function handleImageChange(target, bodyReference, imageRole, file) {
+    if (!canEdit) return;
     if (!file || !target.id) return;
 
     setSaving(true);
@@ -292,6 +324,7 @@ export function BodyPhotosModule() {
   }
 
   async function handleReferenceImageChange(bodyReference, file) {
+    if (!canEdit) return;
     if (!file) return;
 
     setSaving(true);
@@ -319,6 +352,7 @@ export function BodyPhotosModule() {
   }
 
   async function saveCropData(cropData) {
+    if (!canEdit) return;
     if (!cropTarget?.image) return;
 
     setSaving(true);
@@ -352,6 +386,32 @@ export function BodyPhotosModule() {
     });
   }
 
+  function handleEntityImageSelect(target, bodyReference, imageRole, file) {
+    if (!canEdit || !file) return;
+
+    if (target.id) {
+      handleImageChange(target, bodyReference, imageRole, file);
+      return;
+    }
+
+    setPendingEntityFiles((currentFiles) => ({
+      ...currentFiles,
+      [`${bodyReference}-${imageRole}`]: file,
+    }));
+  }
+
+  async function uploadPendingEntityImages(target) {
+    const entries = Object.entries(pendingEntityFiles);
+    if (entries.length === 0) return;
+
+    for (const [key, file] of entries) {
+      const [bodyReference, imageRole] = key.split("-");
+      await handleImageChange(target, bodyReference, imageRole, file);
+    }
+
+    setPendingEntityFiles({});
+  }
+
   return (
     <section className="admin-module-stack">
       <div className="admin-white-panel admin-body-panel">
@@ -377,10 +437,11 @@ export function BodyPhotosModule() {
                 </div>
                 <button
                   className="admin-light-button"
+                  disabled={!canEdit}
                   type="button"
-                  onClick={() => setReferenceEditorOpen((isOpen) => !isOpen)}
+                  onClick={() => setReferenceEditorOpenModal(true)}
                 >
-                  {referenceEditorOpen ? "Close" : "Change body reference"}
+                  Change body reference
                 </button>
               </div>
 
@@ -393,22 +454,6 @@ export function BodyPhotosModule() {
                   />
                 ))}
               </div>
-
-              {referenceEditorOpen ? (
-                <div className="admin-image-editor-grid">
-                  {bodyReferences.map((bodyReference) => (
-                    <ReferenceImageSlot
-                      bodyReference={bodyReference}
-                      image={referenceImages.find(
-                        (item) => item.body_reference === bodyReference,
-                      )}
-                      key={bodyReference}
-                      onAdjustImage={setCropTarget}
-                      onImageChange={handleReferenceImageChange}
-                    />
-                  ))}
-                </div>
-              ) : null}
             </div>
 
             <div className="admin-body-flow-card">
@@ -417,9 +462,13 @@ export function BodyPhotosModule() {
                   <h3>Category preview</h3>
                   <p>Choose a category to manage its areas below.</p>
                 </div>
-                <button className="admin-primary-light" type="button" onClick={startNewCategory}>
-                  New category
-                </button>
+                {canEdit ? (
+                  <button className="admin-primary-light" type="button" onClick={startNewCategory}>
+                    New category
+                  </button>
+                ) : (
+                  <span className="admin-readonly-pill">Viewer mode</span>
+                )}
               </div>
 
               <div className="admin-body-category-grid">
@@ -428,6 +477,7 @@ export function BodyPhotosModule() {
                     active={category.id === selectedCategoryId}
                     images={images}
                     key={category.id}
+                    canEdit={canEdit}
                     onDelete={() => removeCategory(category)}
                     onDropItem={() => moveCategory(category.id)}
                     onDragEnd={() => setDraggedBodyItem(null)}
@@ -449,7 +499,7 @@ export function BodyPhotosModule() {
                 </div>
                 <button
                   className="admin-light-button"
-                  disabled={!selectedCategoryId}
+                  disabled={!canEdit || !selectedCategoryId}
                   type="button"
                   onClick={startNewArea}
                 >
@@ -463,6 +513,7 @@ export function BodyPhotosModule() {
                     active={areaDraft.id === area.id && editingKind === "area"}
                     images={images}
                     key={area.id}
+                    canEdit={canEdit}
                     onDelete={() => removeArea(area)}
                     onDropItem={() => moveArea(area.id)}
                     onDragEnd={() => setDraggedBodyItem(null)}
@@ -476,19 +527,6 @@ export function BodyPhotosModule() {
               </div>
             </div>
           </div>
-
-          <aside className="admin-body-editor">
-            <ImageEditor
-              images={images}
-              onAdjustImage={setCropTarget}
-              onImageChange={handleImageChange}
-              target={
-                editingKind === "category"
-                  ? { ...categoryDraft, kind: "category" }
-                  : { ...areaDraft, kind: "area" }
-              }
-            />
-          </aside>
         </div>
       </div>
 
@@ -507,12 +545,47 @@ export function BodyPhotosModule() {
           <div className="admin-editor-panel-modal" ref={entityEditorRef}>
             <BodyEntityEditor
               draft={editingKind === "category" ? categoryDraft : areaDraft}
+              images={images}
               kind={editingKind}
               onChange={editingKind === "category" ? setCategoryDraft : setAreaDraft}
               onClose={() => setEntityEditorOpen(false)}
+              onAdjustImage={setCropTarget}
+              onImageSelect={handleEntityImageSelect}
               onSubmit={editingKind === "category" ? submitCategory : submitArea}
+              pendingFiles={pendingEntityFiles}
               saving={saving}
             />
+          </div>
+        </div>
+      ) : null}
+
+      {referenceEditorOpenModal ? (
+        <div className="admin-editor-modal" role="dialog" aria-modal="true">
+          <div className="admin-editor-panel-modal" ref={entityEditorRef}>
+            <div className="admin-body-form">
+              <div className="admin-section-heading admin-section-heading--tight">
+                <div>
+                  <h3>Edit body references</h3>
+                  <p>These images appear in the body reference step.</p>
+                </div>
+                <button className="admin-light-button" type="button" onClick={() => setReferenceEditorOpenModal(false)}>
+                  Close
+                </button>
+              </div>
+              <div className="admin-image-editor-grid">
+                {bodyReferences.map((bodyReference) => (
+                  <ReferenceImageSlot
+                    bodyReference={bodyReference}
+                    image={referenceImages.find(
+                      (item) => item.body_reference === bodyReference,
+                    )}
+                    key={bodyReference}
+                    onAdjustImage={setCropTarget}
+                    onImageChange={handleReferenceImageChange}
+                  />
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       ) : null}
@@ -522,6 +595,7 @@ export function BodyPhotosModule() {
 
 function BodyPreviewCard({
   active,
+  canEdit,
   images,
   onDelete,
   onDragEnd,
@@ -538,7 +612,7 @@ function BodyPreviewCard({
   return (
     <article
       className={`admin-body-preview-card ${active ? "is-active" : ""}`}
-      draggable
+      draggable={canEdit}
       onDragEnd={onDragEnd}
       onDragOver={(event) => event.preventDefault()}
       onDragStart={onStartDrag}
@@ -564,9 +638,15 @@ function BodyPreviewCard({
         <span>{target.is_active ? "Visible" : "Hidden"}</span>
       </button>
       <div className="admin-card-actions">
-        <button type="button" onClick={onEdit}>Edit</button>
-        <button type="button" onClick={onHide}>{target.is_active ? "Hide" : "Show"}</button>
-        <button type="button" onClick={onDelete}>Delete</button>
+        {canEdit ? (
+          <>
+            <button type="button" onClick={onEdit}>Edit</button>
+            <button type="button" onClick={onHide}>{target.is_active ? "Hide" : "Show"}</button>
+            <button type="button" onClick={onDelete}>Delete</button>
+          </>
+        ) : (
+          <span className="admin-muted-light">Read only</span>
+        )}
       </div>
     </article>
   );
@@ -585,7 +665,20 @@ function ReferencePreviewCard({ bodyReference, image }) {
   );
 }
 
-function BodyEntityEditor({ draft, kind, onChange, onClose, onSubmit, saving }) {
+function BodyEntityEditor({
+  draft,
+  images,
+  kind,
+  onAdjustImage,
+  onChange,
+  onClose,
+  onImageSelect,
+  onSubmit,
+  pendingFiles,
+  saving,
+}) {
+  const target = { ...draft, kind };
+
   return (
     <form className="admin-body-form" onSubmit={onSubmit}>
       <div className="admin-section-heading admin-section-heading--tight">
@@ -653,23 +746,26 @@ function BodyEntityEditor({ draft, kind, onChange, onClose, onSubmit, saving }) 
       <button className="admin-primary-light" disabled={saving} type="submit">
         {saving ? "Saving..." : `Save ${kind}`}
       </button>
+
+      <ImageEditor
+        images={images}
+        onAdjustImage={onAdjustImage}
+        onImageSelect={onImageSelect}
+        pendingFiles={pendingFiles}
+        target={target}
+      />
     </form>
   );
 }
 
-function ImageEditor({ images, onImageChange, onAdjustImage, target }) {
-  if (!target.id) {
-    return (
-      <div className="admin-body-image-editor">
-        <p className="admin-muted-light">Save this item before uploading images.</p>
-      </div>
-    );
-  }
-
+function ImageEditor({ images, onAdjustImage, onImageSelect, pendingFiles, target }) {
   return (
     <div className="admin-body-image-editor">
       <h3>Images</h3>
-      <p>Every category and area should have male and female images.</p>
+      <p>
+        Every category and area should have male and female images.
+        {!target.id ? " Files selected here will upload after saving." : ""}
+      </p>
       <div className="admin-image-editor-grid">
         {bodyReferences.map((bodyReference) => (
           <ImageSlot
@@ -678,7 +774,8 @@ function ImageEditor({ images, onImageChange, onAdjustImage, target }) {
             imageRole="card"
             key={`${bodyReference}-card`}
             onAdjustImage={onAdjustImage}
-            onImageChange={onImageChange}
+            onImageSelect={onImageSelect}
+            pendingFile={pendingFiles?.[`${bodyReference}-card`]}
             target={target}
           />
         ))}
@@ -689,7 +786,8 @@ function ImageEditor({ images, onImageChange, onAdjustImage, target }) {
             imageRole="placement"
             key={`${bodyReference}-placement`}
             onAdjustImage={onAdjustImage}
-            onImageChange={onImageChange}
+            onImageSelect={onImageSelect}
+            pendingFile={pendingFiles?.[`${bodyReference}-placement`]}
             target={target}
           />
         ))}
@@ -698,7 +796,7 @@ function ImageEditor({ images, onImageChange, onAdjustImage, target }) {
   );
 }
 
-function ImageSlot({ bodyReference, image, imageRole, onAdjustImage, onImageChange, target }) {
+function ImageSlot({ bodyReference, image, imageRole, onAdjustImage, onImageSelect, pendingFile, target }) {
   return (
     <div className="admin-body-image-slot">
       <label>
@@ -707,6 +805,8 @@ function ImageSlot({ bodyReference, image, imageRole, onAdjustImage, onImageChan
         </span>
         {image?.previewUrl ? (
           <CroppedImage cropData={image.crop_data} imageUrl={image.previewUrl} />
+        ) : pendingFile ? (
+          <small>{pendingFile.name}</small>
         ) : (
           <small>No image</small>
         )}
@@ -714,7 +814,7 @@ function ImageSlot({ bodyReference, image, imageRole, onAdjustImage, onImageChan
           accept="image/jpeg,image/png,image/webp"
           type="file"
           onChange={(event) =>
-            onImageChange(target, bodyReference, imageRole, event.target.files?.[0])
+            onImageSelect(target, bodyReference, imageRole, event.target.files?.[0])
           }
         />
       </label>

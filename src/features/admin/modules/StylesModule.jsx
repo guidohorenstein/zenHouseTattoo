@@ -25,7 +25,7 @@ const emptyStyle = {
   is_active: true,
 };
 
-export function StylesModule() {
+export function StylesModule({ canEdit = true }) {
   const [styles, setStyles] = useState([]);
   const [draft, setDraft] = useState(emptyStyle);
   const [colorFile, setColorFile] = useState(null);
@@ -101,6 +101,8 @@ export function StylesModule() {
   }
 
   function openNewStyle() {
+    if (!canEdit) return;
+
     setDraft({
       ...emptyStyle,
       sort_order: (styles.length + 1) * 10,
@@ -112,6 +114,8 @@ export function StylesModule() {
   }
 
   function editStyle(style) {
+    if (!canEdit) return;
+
     setDraft(style);
     setColorFile(null);
     setBlackGreyFile(null);
@@ -144,6 +148,8 @@ export function StylesModule() {
 
   async function handleSubmit(event) {
     event.preventDefault();
+    if (!canEdit) return;
+
     setSaving(true);
     setMessage("");
 
@@ -206,6 +212,8 @@ export function StylesModule() {
   }
 
   async function quickUpdate(style, patch) {
+    if (!canEdit) return;
+
     setSaving(true);
     const result = await saveTattooStyle({ ...style, ...patch });
 
@@ -219,6 +227,8 @@ export function StylesModule() {
   }
 
   async function removeStyle(style) {
+    if (!canEdit) return;
+
     const confirmed = window.confirm(`Delete ${style.title_en}? This cannot be undone.`);
     if (!confirmed) return;
 
@@ -237,6 +247,7 @@ export function StylesModule() {
   }
 
   async function saveStyleCrop(cropData) {
+    if (!canEdit) return;
     if (!cropTarget?.style) return;
 
     const cropField =
@@ -260,6 +271,7 @@ export function StylesModule() {
   }
 
   async function moveStyle(droppedGroup, targetStyleId = "") {
+    if (!canEdit) return;
     if (!draggedStyleId) return;
 
     const draggedStyle = styles.find((style) => style.id === draggedStyleId);
@@ -324,9 +336,13 @@ export function StylesModule() {
               <option value="en">English</option>
               <option value="he">Hebrew</option>
             </select>
-            <button className="admin-primary-light" type="button" onClick={openNewStyle}>
-              New style
-            </button>
+            {canEdit ? (
+              <button className="admin-primary-light" type="button" onClick={openNewStyle}>
+                New style
+              </button>
+            ) : (
+              <span className="admin-readonly-pill">Viewer mode</span>
+            )}
           </div>
         </div>
 
@@ -363,6 +379,7 @@ export function StylesModule() {
             onRemove={removeStyle}
             onOpenCrop={setCropTarget}
             onStartDrag={setDraggedStyleId}
+            canEdit={canEdit}
             styles={mainStyles}
             title="Always visible"
           />
@@ -378,6 +395,7 @@ export function StylesModule() {
             onRemove={removeStyle}
             onOpenCrop={setCropTarget}
             onStartDrag={setDraggedStyleId}
+            canEdit={canEdit}
             styles={moreStyles}
             title="Show more"
           />
@@ -463,25 +481,31 @@ export function StylesModule() {
               </div>
               <small>{style.is_active ? style.placement_group : "hidden"}</small>
               <div className="admin-style-actions">
-                <button className="admin-light-button" type="button" onClick={() => editStyle(style)}>
-                  Edit
-                </button>
-                <button
-                  className="admin-light-button"
-                  disabled={saving}
-                  type="button"
-                  onClick={() => quickUpdate(style, { is_active: !style.is_active })}
-                >
-                  {style.is_active ? "Hide" : "Show"}
-                </button>
-                <button
-                  className="admin-light-button admin-delete-button"
-                  disabled={saving}
-                  type="button"
-                  onClick={() => removeStyle(style)}
-                >
-                  Delete
-                </button>
+                {canEdit ? (
+                  <>
+                    <button className="admin-light-button" type="button" onClick={() => editStyle(style)}>
+                      Edit
+                    </button>
+                    <button
+                      className="admin-light-button"
+                      disabled={saving}
+                      type="button"
+                      onClick={() => quickUpdate(style, { is_active: !style.is_active })}
+                    >
+                      {style.is_active ? "Hide" : "Show"}
+                    </button>
+                    <button
+                      className="admin-light-button admin-delete-button"
+                      disabled={saving}
+                      type="button"
+                      onClick={() => removeStyle(style)}
+                    >
+                      Delete
+                    </button>
+                  </>
+                ) : (
+                  <span className="admin-muted-light">Read only</span>
+                )}
               </div>
             </article>
           ))}
@@ -627,6 +651,7 @@ function StyleEditor({
 }
 
 function StyleDropZone({
+  canEdit,
   draggedStyleId,
   group,
   language,
@@ -656,6 +681,7 @@ function StyleDropZone({
       <div className="admin-preview-grid">
         {styles.map((style) => (
           <StylePreviewCard
+            canEdit={canEdit}
             group={group}
             key={style.id}
             language={language}
@@ -677,6 +703,7 @@ function StyleDropZone({
 }
 
 function StylePreviewCard({
+  canEdit,
   group,
   language,
   mode,
@@ -697,7 +724,7 @@ function StylePreviewCard({
   return (
     <article
       className="admin-style-preview-card"
-      draggable
+      draggable={canEdit}
       onDragOver={(event) => event.preventDefault()}
       onDragStart={() => onStartDrag(style.id)}
       onDrop={(event) => {
@@ -719,16 +746,22 @@ function StylePreviewCard({
       )}
       <strong>{label}</strong>
       <div className="admin-card-actions">
-        <button type="button" onClick={() => onEdit(style)}>Edit</button>
-        <button
-          disabled={!imageUrl}
-          type="button"
-          onClick={() => onOpenCrop({ style, mode })}
-        >
-          Adjust
-        </button>
-        <button type="button" onClick={() => onHide(style)}>Hide</button>
-        <button type="button" onClick={() => onRemove(style)}>Delete</button>
+        {canEdit ? (
+          <>
+            <button type="button" onClick={() => onEdit(style)}>Edit</button>
+            <button
+              disabled={!imageUrl}
+              type="button"
+              onClick={() => onOpenCrop({ style, mode })}
+            >
+              Adjust
+            </button>
+            <button type="button" onClick={() => onHide(style)}>Hide</button>
+            <button type="button" onClick={() => onRemove(style)}>Delete</button>
+          </>
+        ) : (
+          <span className="admin-muted-light">Read only</span>
+        )}
       </div>
     </article>
   );
