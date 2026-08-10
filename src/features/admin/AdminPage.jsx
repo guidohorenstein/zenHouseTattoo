@@ -17,6 +17,7 @@ import { BodyPhotosModule } from "./modules/BodyPhotosModule";
 import { PlaceholderModule } from "./modules/PlaceholderModule";
 import { RequestsModule } from "./modules/RequestsModule";
 import { StylesModule } from "./modules/StylesModule";
+import { TextsModule } from "./modules/TextsModule";
 import { UsersModule } from "./modules/UsersModule";
 import { getAdminPermissions } from "./utils/adminPermissions";
 
@@ -259,6 +260,10 @@ export function AdminPage() {
 
       {activeModule === "body" ? (
         <BodyPhotosModule canEdit={permissions.canEditBodyPhotos} />
+      ) : null}
+
+      {activeModule === "texts" ? (
+        <TextsModule canEdit={permissions.canEditTexts} />
       ) : null}
 
       {activeModule === "users" ? (

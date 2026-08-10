@@ -18,6 +18,7 @@ function createBox(start, end) {
     y: round(Math.min(start.y, end.y)),
     width: round(Math.abs(end.x - start.x)),
     height: round(Math.abs(end.y - start.y)),
+    rotation: 0,
   };
 }
 
@@ -25,6 +26,8 @@ export function PlacementStep({ title, note, imageUrl, value, onChange, labels }
   const canvasRef = useRef(null);
   const [draft, setDraft] = useState(null);
   const [draggingBox, setDraggingBox] = useState(null);
+  const [resizingBox, setResizingBox] = useState(null);
+  const [rotatingBox, setRotatingBox] = useState(null);
   const reachedBoxLimit = value.length >= 3;
 
   function startDrawing(event) {
@@ -37,7 +40,9 @@ export function PlacementStep({ title, note, imageUrl, value, onChange, labels }
   }
 
   function updateDrawing(event) {
-    if (draggingBox && canvasRef.current) {
+    if (!canvasRef.current) return;
+
+    if (draggingBox) {
       const point = getPoint(event, canvasRef.current);
 
       onChange(
@@ -54,13 +59,57 @@ export function PlacementStep({ title, note, imageUrl, value, onChange, labels }
       return;
     }
 
-    if (!draft || !canvasRef.current) return;
+    if (resizingBox) {
+      const point = getPoint(event, canvasRef.current);
+
+      onChange(
+        value.map((box) => {
+          if (box.id !== resizingBox.id) return box;
+
+          const width = round(Math.min(100 - box.x, Math.max(4, point.x - box.x)));
+          const height = round(Math.min(100 - box.y, Math.max(4, point.y - box.y)));
+
+          return { ...box, width, height };
+        })
+      );
+      return;
+    }
+
+    if (rotatingBox) {
+      const rect = canvasRef.current.getBoundingClientRect();
+      const box = value.find((item) => item.id === rotatingBox.id);
+      if (!box) return;
+
+      const centerX = rect.left + ((box.x + box.width / 2) / 100) * rect.width;
+      const centerY = rect.top + ((box.y + box.height / 2) / 100) * rect.height;
+      const angleDeg =
+        (Math.atan2(event.clientY - centerY, event.clientX - centerX) * 180) / Math.PI + 90;
+
+      onChange(
+        value.map((item) =>
+          item.id === rotatingBox.id ? { ...item, rotation: Math.round(angleDeg) } : item
+        )
+      );
+      return;
+    }
+
+    if (!draft) return;
     setDraft({ ...draft, end: getPoint(event, canvasRef.current) });
   }
 
   function finishDrawing() {
     if (draggingBox) {
       setDraggingBox(null);
+      return;
+    }
+
+    if (resizingBox) {
+      setResizingBox(null);
+      return;
+    }
+
+    if (rotatingBox) {
+      setRotatingBox(null);
       return;
     }
 
@@ -92,6 +141,29 @@ export function PlacementStep({ title, note, imageUrl, value, onChange, labels }
     });
   }
 
+  function startResizingBox(event, box) {
+    if (!canvasRef.current) return;
+
+    event.stopPropagation();
+    event.currentTarget.setPointerCapture(event.pointerId);
+    setResizingBox({ id: box.id });
+  }
+
+  function startRotatingBox(event, box) {
+    if (!canvasRef.current) return;
+
+    event.stopPropagation();
+    event.currentTarget.setPointerCapture(event.pointerId);
+    setRotatingBox({ id: box.id });
+  }
+
+  function cancelGestures() {
+    setDraft(null);
+    setDraggingBox(null);
+    setResizingBox(null);
+    setRotatingBox(null);
+  }
+
   const draftBox = draft ? { id: "draft", ...createBox(draft.start, draft.end) } : null;
 
   return (
@@ -120,10 +192,7 @@ export function PlacementStep({ title, note, imageUrl, value, onChange, labels }
           onPointerDown={startDrawing}
           onPointerMove={updateDrawing}
           onPointerUp={finishDrawing}
-          onPointerCancel={() => {
-            setDraft(null);
-            setDraggingBox(null);
-          }}
+          onPointerCancel={cancelGestures}
         >
           <img
             className="placement-image"
@@ -145,18 +214,37 @@ export function PlacementStep({ title, note, imageUrl, value, onChange, labels }
                 top: `${box.y}%`,
                 width: `${box.width}%`,
                 height: `${box.height}%`,
+                transform: box.rotation ? `rotate(${box.rotation}deg)` : undefined,
               }}
             >
               {box.id !== "draft" ? (
-                <button
-                  className="placement-delete"
-                  type="button"
-                  aria-label={`${labels.delete} ${index + 1}`}
-                  onPointerDown={(event) => event.stopPropagation()}
-                  onClick={() => removeBox(box.id)}
-                >
-                  ×
-                </button>
+                <>
+                  <button
+                    className="placement-delete"
+                    type="button"
+                    aria-label={`${labels.delete} ${index + 1}`}
+                    onPointerDown={(event) => event.stopPropagation()}
+                    onClick={() => removeBox(box.id)}
+                  >
+                    ×
+                  </button>
+                  <button
+                    className="placement-rotate"
+                    type="button"
+                    aria-label="Rotate"
+                    onPointerDown={(event) => startRotatingBox(event, box)}
+                  >
+                    ⟳
+                  </button>
+                  <button
+                    className="placement-resize"
+                    type="button"
+                    aria-label="Resize"
+                    onPointerDown={(event) => startResizingBox(event, box)}
+                  >
+                    ⤡
+                  </button>
+                </>
               ) : null}
             </div>
           ))}

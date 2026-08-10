@@ -27,8 +27,26 @@ export async function listPublicTattooStyles() {
   };
 }
 
+export async function listPublicFormTexts() {
+  if (!hasSupabaseConfig) return { he: {}, en: {}, error: null };
+
+  const { data, error } = await supabase.from("form_texts").select("key, he_text, en_text");
+
+  if (error) return { he: {}, en: {}, error: error.message };
+
+  const he = {};
+  const en = {};
+  for (const row of data || []) {
+    he[row.key] = row.he_text;
+    en[row.key] = row.en_text;
+  }
+
+  return { he, en, error: null };
+}
+
 export async function listPublicBodyPhotos() {
-  if (!hasSupabaseConfig) return { categories: [], areas: [], images: [], error: null };
+  if (!hasSupabaseConfig)
+    return { categories: [], areas: [], images: [], referenceImages: [], error: null };
 
   const [categoriesResult, areasResult, imagesResult, referenceImagesResult] = await Promise.all([
     supabase

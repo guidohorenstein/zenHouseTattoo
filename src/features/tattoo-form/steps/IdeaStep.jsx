@@ -4,6 +4,8 @@ const ALLOWED_REFERENCE_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image
 
 export function IdeaStep({
   title,
+  ideaLabel,
+  uploadLabel,
   value,
   onDescriptionChange,
   placeholder,
@@ -73,6 +75,8 @@ export function IdeaStep({
 
       {notice ? <p className="step-alert">{notice}</p> : null}
 
+      {ideaLabel ? <p className="field-label">{ideaLabel}</p> : null}
+
       <div className="textarea-wrap">
         <textarea
           className="textarea"
@@ -92,8 +96,7 @@ export function IdeaStep({
       </div>
 
       <label className="upload-box">
-        <span>{labels.referenceImages}</span>
-        <small>{labels.maxReferenceImages}</small>
+        <span>{uploadLabel || labels.referenceImages}</span>
         <input
           type="file"
           accept="image/*"

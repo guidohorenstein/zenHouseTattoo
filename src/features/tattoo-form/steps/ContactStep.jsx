@@ -1,5 +1,6 @@
 export function ContactStep({
   title,
+  note,
   fullName,
   email,
   phone,
@@ -11,6 +12,7 @@ export function ContactStep({
   return (
     <div className="step">
       <h1>{title}</h1>
+      {note ? <p>{note}</p> : null}
 
       <div className="contact-fields">
         <input

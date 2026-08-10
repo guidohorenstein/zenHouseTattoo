@@ -16,7 +16,7 @@ function toInquiryPayload(formData, language, submissionKey) {
     general_zone: formData.generalZone,
     specific_zone: formData.specificZone,
     placement_boxes: formData.placementBoxes,
-    styles: formData.styles,
+    styles: formData.styles ? [formData.styles] : [],
     color_mode: formData.colorMode,
     timing: formData.timing,
     contact_times: formData.contactTimes,

@@ -44,27 +44,32 @@ export async function exportMarkedPlacementImage({ imageUrl, boxes }) {
     const boxWidth = (box.width / 100) * width;
     const boxHeight = (box.height / 100) * height;
     const strokeWidth = Math.max(4, Math.round(width * 0.006));
+    const rotation = ((box.rotation || 0) * Math.PI) / 180;
 
     context.save();
+    context.translate(x + boxWidth / 2, y + boxHeight / 2);
+    context.rotate(rotation);
+    context.translate(-boxWidth / 2, -boxHeight / 2);
+
     context.lineWidth = strokeWidth;
     context.strokeStyle = "#0ea5e9";
     context.fillStyle = "rgba(14, 165, 233, 0.18)";
     context.shadowColor = "rgba(2, 6, 23, 0.42)";
     context.shadowBlur = strokeWidth * 2;
-    context.fillRect(x, y, boxWidth, boxHeight);
-    context.strokeRect(x, y, boxWidth, boxHeight);
+    context.fillRect(0, 0, boxWidth, boxHeight);
+    context.strokeRect(0, 0, boxWidth, boxHeight);
 
     context.shadowBlur = 0;
     context.fillStyle = "#0f172a";
     context.beginPath();
-    context.arc(x + strokeWidth * 3, y + strokeWidth * 3, strokeWidth * 2.4, 0, Math.PI * 2);
+    context.arc(strokeWidth * 3, strokeWidth * 3, strokeWidth * 2.4, 0, Math.PI * 2);
     context.fill();
 
     context.fillStyle = "#ffffff";
     context.font = `700 ${strokeWidth * 2.5}px Arial, sans-serif`;
     context.textAlign = "center";
     context.textBaseline = "middle";
-    context.fillText(String(index + 1), x + strokeWidth * 3, y + strokeWidth * 3);
+    context.fillText(String(index + 1), strokeWidth * 3, strokeWidth * 3);
     context.restore();
   });
 

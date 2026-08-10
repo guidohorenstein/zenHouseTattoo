@@ -19,7 +19,7 @@ export function buildWhatsappMessage(formData, t) {
 ✉️ ${labels.email}: ${formData.email}
 
 💭 ${labels.idea}: ${formData.ideaDescription || "-"}
-🎨 ${labels.style}: ${listLabels(t, formData.styles)}
+🎨 ${labels.style}: ${optionLabel(t, formData.styles)}
 ⚫ ${labels.color}: ${optionLabel(t, formData.colorMode)}
 📍 ${labels.generalZone}: ${optionLabel(t, formData.generalZone)}
 🔎 ${labels.specificZone}: ${optionLabel(t, formData.specificZone)}

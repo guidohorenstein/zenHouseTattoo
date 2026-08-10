@@ -7,6 +7,7 @@ export function FormNavigation({
   canGoNext,
   isLastStep,
   isSubmitting = false,
+  hideNext = false,
   onBack,
   onNext,
   onSubmit,
@@ -41,17 +42,19 @@ export function FormNavigation({
         {backLabel}
       </button>
 
-      <button
-        className={`primary-button ${isLastStep ? "success" : ""} ${
-          primaryDisabled ? "is-disabled" : ""
-        }`}
-        type="button"
-        onClick={handlePrimaryClick}
-        disabled={isSubmitting}
-        aria-disabled={primaryDisabled}
-      >
-        {isLastStep && isSubmitting ? submittingLabel : isLastStep ? quoteLabel : nextLabel}
-      </button>
+      {hideNext && !isLastStep ? null : (
+        <button
+          className={`primary-button ${isLastStep ? "success" : ""} ${
+            primaryDisabled ? "is-disabled" : ""
+          }`}
+          type="button"
+          onClick={handlePrimaryClick}
+          disabled={isSubmitting}
+          aria-disabled={primaryDisabled}
+        >
+          {isLastStep && isSubmitting ? submittingLabel : isLastStep ? quoteLabel : nextLabel}
+        </button>
+      )}
     </div>
   );
 }

@@ -33,6 +33,15 @@ export const extraTattooStyles = [
   "mandala",
 ];
 
+export const autoAdvanceSteps = [
+  "color",
+  "style",
+  "bodyReference",
+  "generalZone",
+  "specificZone",
+  "timing",
+];
+
 export const colorModes = ["blackGrey", "color"];
 
 export const timingOptions = ["now", "weeks", "month", "dontCare"];
