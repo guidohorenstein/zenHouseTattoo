@@ -22,6 +22,7 @@ const emptyStyle = {
   black_grey_crop_data: {},
   colorPreviewUrl: "",
   blackGreyPreviewUrl: "",
+  is_more_styles_preview: false,
   is_active: true,
 };
 
@@ -226,6 +227,43 @@ export function StylesModule({ canEdit = true }) {
     setSaving(false);
   }
 
+  async function useMoreStylesPreview(selectedStyle) {
+    if (!canEdit) return;
+
+    setSaving(true);
+    setMessage("");
+
+    const currentPreviewStyles = sortedStyles.filter(
+      (style) => style.id !== selectedStyle.id && style.is_more_styles_preview,
+    );
+
+    const clearResults = await Promise.all(
+      currentPreviewStyles.map((style) =>
+        saveTattooStyle({
+          ...style,
+          is_more_styles_preview: false,
+        }),
+      ),
+    );
+    const clearError = clearResults.find((result) => result.error)?.error;
+    const selectResult = clearError
+      ? { error: clearError }
+      : await saveTattooStyle({
+          ...selectedStyle,
+          is_more_styles_preview: true,
+        });
+    const error = selectResult.error;
+
+    if (error) {
+      setMessage(error);
+    } else {
+      await loadStyles();
+      setMessage("More styles preview updated.");
+    }
+
+    setSaving(false);
+  }
+
   async function removeStyle(style) {
     if (!canEdit) return;
 
@@ -379,6 +417,7 @@ export function StylesModule({ canEdit = true }) {
             onRemove={removeStyle}
             onOpenCrop={setCropTarget}
             onStartDrag={setDraggedStyleId}
+            onUseMorePreview={useMoreStylesPreview}
             canEdit={canEdit}
             styles={mainStyles}
             title="Always visible"
@@ -395,6 +434,7 @@ export function StylesModule({ canEdit = true }) {
             onRemove={removeStyle}
             onOpenCrop={setCropTarget}
             onStartDrag={setDraggedStyleId}
+            onUseMorePreview={useMoreStylesPreview}
             canEdit={canEdit}
             styles={moreStyles}
             title="Show more"
@@ -480,6 +520,9 @@ export function StylesModule({ canEdit = true }) {
                 </div>
               </div>
               <small>{style.is_active ? style.placement_group : "hidden"}</small>
+              {style.is_more_styles_preview ? (
+                <span className="admin-more-preview-pill">More preview</span>
+              ) : null}
               <div className="admin-style-actions">
                 {canEdit ? (
                   <>
@@ -662,6 +705,7 @@ function StyleDropZone({
   onRemove,
   onOpenCrop,
   onStartDrag,
+  onUseMorePreview,
   styles,
   title,
 }) {
@@ -692,6 +736,7 @@ function StyleDropZone({
             onRemove={onRemove}
             onOpenCrop={onOpenCrop}
             onStartDrag={onStartDrag}
+            onUseMorePreview={onUseMorePreview}
             style={style}
           />
         ))}
@@ -713,6 +758,7 @@ function StylePreviewCard({
   onRemove,
   onOpenCrop,
   onStartDrag,
+  onUseMorePreview,
   style,
 }) {
   const imageUrl =
@@ -757,6 +803,15 @@ function StylePreviewCard({
               Adjust
             </button>
             <button type="button" onClick={() => onHide(style)}>Hide</button>
+            {group === "more" ? (
+              <button
+                className={style.is_more_styles_preview ? "is-active" : ""}
+                type="button"
+                onClick={() => onUseMorePreview(style)}
+              >
+                Preview
+              </button>
+            ) : null}
             <button type="button" onClick={() => onRemove(style)}>Delete</button>
           </>
         ) : (

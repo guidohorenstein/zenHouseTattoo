@@ -35,6 +35,7 @@ export async function saveTattooStyle(style) {
     black_grey_image_path: style.black_grey_image_path || null,
     color_crop_data: style.color_crop_data || {},
     black_grey_crop_data: style.black_grey_crop_data || {},
+    is_more_styles_preview: Boolean(style.is_more_styles_preview),
     is_active: Boolean(style.is_active),
   };
 

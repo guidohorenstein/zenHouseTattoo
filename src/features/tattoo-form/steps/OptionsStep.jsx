@@ -12,6 +12,7 @@ export function OptionsStep({
   moreLabel = "",
   showLessLabel = "Show less",
   moreOptions = [],
+  morePreviewOption,
 }) {
   const [showMoreOptions, setShowMoreOptions] = useState(false);
   const hasMoreOptions = moreOptions.length > 0;
@@ -58,7 +59,10 @@ export function OptionsStep({
   }
 
   function renderMoreStylesButton() {
-    const previewOption = moreOptions.find((option) => option.imageUrl) || options.find((option) => option.imageUrl);
+    const previewOption =
+      morePreviewOption ||
+      moreOptions.find((option) => option.imageUrl) ||
+      options.find((option) => option.imageUrl);
 
     if (variant !== "styles" || !previewOption?.imageUrl) {
       return (

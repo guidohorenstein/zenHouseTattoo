@@ -7,7 +7,7 @@ export async function listPublicTattooStyles() {
   const { data, error } = await supabase
     .from("tattoo_styles")
     .select(
-      "slug, title_en, title_he, placement_group, sort_order, color_image_path, black_grey_image_path, color_crop_data, black_grey_crop_data",
+      "slug, title_en, title_he, placement_group, sort_order, color_image_path, black_grey_image_path, color_crop_data, black_grey_crop_data, is_more_styles_preview",
     )
     .eq("is_active", true)
     .order("placement_group", { ascending: true })

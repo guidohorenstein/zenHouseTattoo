@@ -39,7 +39,6 @@ export const autoAdvanceSteps = [
   "bodyReference",
   "generalZone",
   "specificZone",
-  "timing",
 ];
 
 export const colorModes = ["blackGrey", "color"];

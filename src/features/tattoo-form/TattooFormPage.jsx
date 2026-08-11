@@ -13,6 +13,7 @@ import {
 import {
   autoAdvanceSteps,
   colorModes,
+  tattooStyles,
   contactTimeOptions,
   formSteps,
   timingOptions,
@@ -129,6 +130,19 @@ function toRemoteStyleOptions(styles, language, colorMode) {
     }));
 }
 
+function toFallbackStyleOptions(styleIds, t, colorMode) {
+  const basePath =
+    colorMode === "blackGrey"
+      ? "/images/tattoo-styles/black-grey/thumbs"
+      : "/images/tattoo-styles/thumbs";
+
+  return styleIds.map((id) => ({
+    id,
+    label: t.options[id],
+    imageUrl: `${basePath}/${id}.jpg`,
+  }));
+}
+
 function getRemoteBodyImage(bodyPhotos, { areaId, bodyReference, categoryId, imageRole }) {
   return bodyPhotos.images.find((item) => {
     const matchesTarget = areaId
@@ -160,7 +174,7 @@ function getRemoteBodyReferenceImageUrl(bodyPhotos, bodyReference) {
 export function TattooFormPage() {
   const [language, setLanguage] = useState("he");
   const [currentStep, setCurrentStep] = useState(0);
-  const [transitionDirection, setTransitionDirection] = useState("next");
+  const [transitionPhase, setTransitionPhase] = useState("idle");
   const [ideaNotice, setIdeaNotice] = useState("");
   const [toastMessage, setToastMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -168,7 +182,7 @@ export function TattooFormPage() {
   const submitLockRef = useRef(false);
   const submissionKeyRef = useRef(createSubmissionKey());
   const toastTimerRef = useRef(null);
-  const [remoteLoaded, setRemoteLoaded] = useState(false);
+  const stepTransitionTimerRef = useRef(null);
   const [remoteStyles, setRemoteStyles] = useState([]);
   const [remoteBodyPhotos, setRemoteBodyPhotos] = useState({
     categories: [],
@@ -198,68 +212,77 @@ export function TattooFormPage() {
       : "") || getZoneImageUrl(formData);
 
   useEffect(() => {
-    return () => window.clearTimeout(toastTimerRef.current);
+    return () => {
+      window.clearTimeout(toastTimerRef.current);
+      window.clearTimeout(stepTransitionTimerRef.current);
+    };
   }, []);
 
   useEffect(() => {
     let shouldIgnore = false;
 
-    async function loadRemoteStyles() {
-      const [
-        { listPublicBodyPhotos, listPublicTattooStyles, listPublicFormTexts },
-        { applyTextOverrides },
-      ] = await Promise.all([
-        import("./services/formContentApi"),
-        import("./utils/applyTextOverrides"),
-      ]);
-      const [stylesResult, bodyPhotosResult, textsResult] = await Promise.all([
-        listPublicTattooStyles(),
-        listPublicBodyPhotos(),
-        listPublicFormTexts(),
-      ]);
+    async function loadRemoteContent() {
+      try {
+        const [
+          { listPublicBodyPhotos, listPublicTattooStyles, listPublicFormTexts },
+          { applyTextOverrides },
+        ] = await Promise.all([
+          import("./services/formContentApi"),
+          import("./utils/applyTextOverrides"),
+        ]);
+        const [stylesResult, bodyPhotosResult, textsResult] = await Promise.all([
+          listPublicTattooStyles(),
+          listPublicBodyPhotos(),
+          listPublicFormTexts(),
+        ]);
 
-      if (!shouldIgnore) {
-        setRemoteStyles(stylesResult.styles);
-        setRemoteBodyPhotos({
-          categories: bodyPhotosResult.categories,
-          areas: bodyPhotosResult.areas,
-          images: bodyPhotosResult.images,
-          referenceImages: bodyPhotosResult.referenceImages,
-        });
-        setHeTranslations(applyTextOverrides(translations.he, textsResult.he));
-        setEnTranslations(applyTextOverrides(translations.en, textsResult.en));
+        if (!shouldIgnore) {
+          setRemoteStyles(stylesResult.styles);
+          setRemoteBodyPhotos({
+            categories: bodyPhotosResult.categories,
+            areas: bodyPhotosResult.areas,
+            images: bodyPhotosResult.images,
+            referenceImages: bodyPhotosResult.referenceImages,
+          });
+          setHeTranslations(applyTextOverrides(translations.he, textsResult.he));
+          setEnTranslations(applyTextOverrides(translations.en, textsResult.en));
 
-        const fallbackImageUrls = [
-          "/images/backgrounds/background.webp",
-          "/images/logo/topbar-logo-white.webp",
-          ...colorModes.map((colorModeId) => `/images/color-examples/${colorModeId}.jpeg`),
-          ...["male", "female"].flatMap((referenceId) => [
-            getBodyReferenceImageUrl(referenceId),
-            ...generalZones.map((zone) => getGeneralZoneImageUrl(zone.id, referenceId)),
-            ...generalZones.flatMap((zone) =>
-              getSpecificZones(zone.id).map((specificZoneId) =>
-                getSpecificZoneImageUrl(specificZoneId, referenceId),
+          const fallbackImageUrls = [
+            "/images/backgrounds/background.webp",
+            "/images/logo/topbar-logo-white.webp",
+            ...colorModes.map((colorModeId) => `/images/color-examples/${colorModeId}.jpeg`),
+            ...tattooStyles.flatMap((styleId) => [
+              `/images/tattoo-styles/thumbs/${styleId}.jpg`,
+              `/images/tattoo-styles/black-grey/thumbs/${styleId}.jpg`,
+            ]),
+            ...["male", "female"].flatMap((referenceId) => [
+              getBodyReferenceImageUrl(referenceId),
+              ...generalZones.map((zone) => getGeneralZoneImageUrl(zone.id, referenceId)),
+              ...generalZones.flatMap((zone) =>
+                getSpecificZones(zone.id).map((specificZoneId) =>
+                  getSpecificZoneImageUrl(specificZoneId, referenceId),
+                ),
               ),
-            ),
-          ]),
-        ];
+            ]),
+          ];
 
-        const imageUrls = [
-          ...stylesResult.styles.flatMap((s) => [s.colorPreviewUrl, s.blackGreyPreviewUrl]),
-          ...bodyPhotosResult.images.map((i) => i.previewUrl),
-          ...bodyPhotosResult.referenceImages.map((i) => i.previewUrl),
-          ...fallbackImageUrls,
-        ].filter(Boolean);
+          const imageUrls = [
+            ...stylesResult.styles.flatMap((s) => [s.colorPreviewUrl, s.blackGreyPreviewUrl]),
+            ...bodyPhotosResult.images.map((i) => i.previewUrl),
+            ...bodyPhotosResult.referenceImages.map((i) => i.previewUrl),
+            ...fallbackImageUrls,
+          ].filter(Boolean);
 
-        await Promise.all(
-          [...new Set(imageUrls)].map((url) => preloadImage(url)),
-        );
-
-        if (!shouldIgnore) setRemoteLoaded(true);
+          Promise.all([...new Set(imageUrls)].map((url) => preloadImage(url))).catch(
+            () => {},
+          );
+        }
+      } catch {
+        // The local fallback form remains usable if remote content is unavailable.
       }
     }
 
-    loadRemoteStyles();
+    loadRemoteContent();
 
     return () => {
       shouldIgnore = true;
@@ -333,16 +356,26 @@ export function TattooFormPage() {
             (specificZoneId) =>
               getSpecificZoneImageUrl(specificZoneId, formData.bodyReference),
           ),
-      styles: toRemoteStyleOptions(
-        remoteStyles.filter((style) => style.placement_group === "main"),
-        language,
-        formData.colorMode,
-      ),
+      styles: remoteStyles.length
+        ? toRemoteStyleOptions(
+            remoteStyles.filter((style) => style.placement_group === "main"),
+            language,
+            formData.colorMode,
+          )
+        : toFallbackStyleOptions(tattooStyles, t, formData.colorMode),
       extraStyles: toRemoteStyleOptions(
         remoteStyles.filter((style) => style.placement_group === "more"),
         language,
         formData.colorMode,
       ),
+      moreStylePreview: toRemoteStyleOptions(
+        remoteStyles.filter(
+          (style) =>
+            style.placement_group === "more" && style.is_more_styles_preview,
+        ),
+        language,
+        formData.colorMode,
+      )[0],
       colors: toOptions(
         colorModes,
         t,
@@ -394,25 +427,37 @@ export function TattooFormPage() {
   }
 
   function goNext() {
-    if (!canGoNext || isLastStep) return;
+    if (!canGoNext || isLastStep || transitionPhase !== "idle") return;
 
-    setTransitionDirection("next");
-    setCurrentStep((step) => step + 1);
+    goToStep(currentStep + 1);
   }
 
   function goBack() {
-    setTransitionDirection("back");
-    setCurrentStep((step) => Math.max(0, step - 1));
+    if (transitionPhase !== "idle") return;
+
+    goToStep(Math.max(0, currentStep - 1));
+  }
+
+  function goToStep(nextStep) {
+    setTransitionPhase("exiting");
+    window.clearTimeout(stepTransitionTimerRef.current);
+    stepTransitionTimerRef.current = window.setTimeout(() => {
+      setCurrentStep(nextStep);
+      setTransitionPhase("entering");
+      stepTransitionTimerRef.current = window.setTimeout(
+        () => setTransitionPhase("idle"),
+        240,
+      );
+    }, 180);
   }
 
   function selectAndAdvance(field, value) {
     updateFormData(field, value);
 
-    if (currentStep >= formSteps.length - 1) return;
+    if (currentStep >= formSteps.length - 1 || transitionPhase !== "idle") return;
 
     window.setTimeout(() => {
-      setTransitionDirection("next");
-      setCurrentStep((step) => Math.min(formSteps.length - 1, step + 1));
+      goToStep(Math.min(formSteps.length - 1, currentStep + 1));
     }, 380);
   }
 
@@ -544,6 +589,7 @@ export function TattooFormPage() {
           moreLabel={t.moreStyles}
           showLessLabel={t.showLessStyles}
           moreOptions={options.extraStyles}
+          morePreviewOption={options.moreStylePreview}
         />
       ),
       color: (
@@ -577,7 +623,7 @@ export function TattooFormPage() {
           title={stepText.title}
           options={options.timing}
           value={formData.timing}
-          onChange={(value) => selectAndAdvance("timing", value)}
+          onChange={(value) => updateFormData("timing", value)}
         />
       ),
       contactTime: (
@@ -593,28 +639,6 @@ export function TattooFormPage() {
     };
 
     return steps[stepId];
-  }
-
-  if (!remoteLoaded) {
-    return (
-      <main className="form-page form-page--loading" lang={language} dir={direction}>
-        <section className="form-stage">
-          <div className="form-card">
-            <div className="form-loading">
-              <img
-                className="form-loading-logo"
-                src="/images/logo/topbar-logo-white.webp"
-                alt="Zen House Tattoo"
-                width="180"
-                height="67"
-                decoding="async"
-              />
-              <span className="submit-loader-spinner" />
-            </div>
-          </div>
-        </section>
-      </main>
-    );
   }
 
   return (
@@ -652,7 +676,7 @@ export function TattooFormPage() {
             {t.step} {currentStep + 1} {t.of} {formSteps.length}
           </p> */}
           <div
-            className={`step-motion step-motion--${transitionDirection}`}
+            className={`step-motion step-motion--${transitionPhase}`}
             key={stepId}
           >
             {renderStep()}
