@@ -15,6 +15,8 @@ export function OptionsStep({
 }) {
   const [showMoreOptions, setShowMoreOptions] = useState(false);
   const hasMoreOptions = moreOptions.length > 0;
+  const shouldMergeStyleOptions = variant === "styles" && showMoreOptions;
+  const visibleOptions = shouldMergeStyleOptions ? [...options, ...moreOptions] : options;
 
   function handleClick(optionId) {
     if (!multiple) {
@@ -30,14 +32,15 @@ export function OptionsStep({
     onChange([...value, optionId]);
   }
 
-  function renderOptions(optionList, extraClassName = "") {
+  function renderOptions(optionList, extraClassName = "", extraNode = null) {
     const gridHasImages = optionList.some((option) => option.imageUrl);
+    const optionCount = optionList.length + (extraNode ? 1 : 0);
 
     return (
       <div
         className={`options-grid ${gridHasImages ? "options-grid--visual" : ""} ${
           variant ? `options-grid--${variant}` : ""
-        } options-grid--count-${optionList.length} ${extraClassName}`}
+        } options-grid--count-${optionCount} ${extraClassName}`}
       >
         {optionList.map((option) => (
           <OptionCard
@@ -49,7 +52,41 @@ export function OptionsStep({
             onClick={() => handleClick(option.id)}
           />
         ))}
+        {extraNode}
       </div>
+    );
+  }
+
+  function renderMoreStylesButton() {
+    const previewOption = moreOptions.find((option) => option.imageUrl) || options.find((option) => option.imageUrl);
+
+    if (variant !== "styles" || !previewOption?.imageUrl) {
+      return (
+        <button
+          className="more-styles-toggle"
+          type="button"
+          aria-expanded={false}
+          onClick={() => setShowMoreOptions(true)}
+        >
+          {moreLabel}
+          <span aria-hidden="true">+</span>
+        </button>
+      );
+    }
+
+    return (
+      <button
+        className="option-card option-card--visual option-card--more-styles"
+        type="button"
+        aria-expanded={false}
+        onClick={() => setShowMoreOptions(true)}
+      >
+        <span className="option-card__media">
+          <img src={previewOption.imageUrl} alt="" draggable="false" decoding="async" />
+          <span className="more-style-overlay" aria-hidden="true">+</span>
+        </span>
+        <span className="option-card__label">{moreLabel}</span>
+      </button>
     );
   }
 
@@ -58,24 +95,14 @@ export function OptionsStep({
       <h1>{title}</h1>
       {note ? <p>{note}</p> : null}
 
-      {renderOptions(options)}
+      {renderOptions(
+        visibleOptions,
+        "",
+        hasMoreOptions && !showMoreOptions ? renderMoreStylesButton() : null,
+      )}
 
-      {hasMoreOptions ? (
+      {hasMoreOptions && showMoreOptions ? (
         <div className="more-styles">
-          {!showMoreOptions ? (
-            <button
-              className="more-styles-toggle"
-              type="button"
-              aria-expanded={false}
-              onClick={() => setShowMoreOptions(true)}
-            >
-              {moreLabel}
-              <span aria-hidden="true">+</span>
-            </button>
-          ) : null}
-
-          {showMoreOptions ? renderOptions(moreOptions, "options-grid--more") : null}
-
           {showMoreOptions ? (
             <button
               className="more-styles-toggle"

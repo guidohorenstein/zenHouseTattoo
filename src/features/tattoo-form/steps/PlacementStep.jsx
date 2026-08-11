@@ -22,6 +22,19 @@ function createBox(start, end) {
   };
 }
 
+function getBoxCenter(element, box) {
+  const rect = element.getBoundingClientRect();
+
+  return {
+    x: rect.left + ((box.x + box.width / 2) / 100) * rect.width,
+    y: rect.top + ((box.y + box.height / 2) / 100) * rect.height,
+  };
+}
+
+function getPointerAngle(event, center) {
+  return (Math.atan2(event.clientY - center.y, event.clientX - center.x) * 180) / Math.PI;
+}
+
 export function PlacementStep({ title, note, imageUrl, value, onChange, labels }) {
   const canvasRef = useRef(null);
   const [draft, setDraft] = useState(null);
@@ -33,8 +46,10 @@ export function PlacementStep({ title, note, imageUrl, value, onChange, labels }
   function startDrawing(event) {
     if (!canvasRef.current) return;
     if (reachedBoxLimit) return;
+    if (event.target.closest?.(".placement-control")) return;
 
     const point = getPoint(event, canvasRef.current);
+    event.preventDefault();
     event.currentTarget.setPointerCapture(event.pointerId);
     setDraft({ start: point, end: point });
   }
@@ -76,14 +91,12 @@ export function PlacementStep({ title, note, imageUrl, value, onChange, labels }
     }
 
     if (rotatingBox) {
-      const rect = canvasRef.current.getBoundingClientRect();
       const box = value.find((item) => item.id === rotatingBox.id);
       if (!box) return;
 
-      const centerX = rect.left + ((box.x + box.width / 2) / 100) * rect.width;
-      const centerY = rect.top + ((box.y + box.height / 2) / 100) * rect.height;
+      const currentAngle = getPointerAngle(event, rotatingBox.center);
       const angleDeg =
-        (Math.atan2(event.clientY - centerY, event.clientX - centerX) * 180) / Math.PI + 90;
+        rotatingBox.initialRotation + (currentAngle - rotatingBox.startAngle);
 
       onChange(
         value.map((item) =>
@@ -132,6 +145,7 @@ export function PlacementStep({ title, note, imageUrl, value, onChange, labels }
     if (!canvasRef.current) return;
     const point = getPoint(event, canvasRef.current);
 
+    event.preventDefault();
     event.stopPropagation();
     event.currentTarget.setPointerCapture(event.pointerId);
     setDraggingBox({
@@ -144,6 +158,7 @@ export function PlacementStep({ title, note, imageUrl, value, onChange, labels }
   function startResizingBox(event, box) {
     if (!canvasRef.current) return;
 
+    event.preventDefault();
     event.stopPropagation();
     event.currentTarget.setPointerCapture(event.pointerId);
     setResizingBox({ id: box.id });
@@ -152,9 +167,17 @@ export function PlacementStep({ title, note, imageUrl, value, onChange, labels }
   function startRotatingBox(event, box) {
     if (!canvasRef.current) return;
 
+    event.preventDefault();
     event.stopPropagation();
     event.currentTarget.setPointerCapture(event.pointerId);
-    setRotatingBox({ id: box.id });
+
+    const center = getBoxCenter(canvasRef.current, box);
+    setRotatingBox({
+      id: box.id,
+      center,
+      startAngle: getPointerAngle(event, center),
+      initialRotation: box.rotation || 0,
+    });
   }
 
   function cancelGestures() {
@@ -220,16 +243,23 @@ export function PlacementStep({ title, note, imageUrl, value, onChange, labels }
               {box.id !== "draft" ? (
                 <>
                   <button
-                    className="placement-delete"
+                    className="placement-control placement-delete"
                     type="button"
                     aria-label={`${labels.delete} ${index + 1}`}
-                    onPointerDown={(event) => event.stopPropagation()}
-                    onClick={() => removeBox(box.id)}
+                    onPointerDown={(event) => {
+                      event.preventDefault();
+                      event.stopPropagation();
+                    }}
+                    onClick={(event) => {
+                      event.preventDefault();
+                      event.stopPropagation();
+                      removeBox(box.id);
+                    }}
                   >
                     ×
                   </button>
                   <button
-                    className="placement-rotate"
+                    className="placement-control placement-rotate"
                     type="button"
                     aria-label="Rotate"
                     onPointerDown={(event) => startRotatingBox(event, box)}
@@ -237,7 +267,7 @@ export function PlacementStep({ title, note, imageUrl, value, onChange, labels }
                     ⟳
                   </button>
                   <button
-                    className="placement-resize"
+                    className="placement-control placement-resize"
                     type="button"
                     aria-label="Resize"
                     onPointerDown={(event) => startResizingBox(event, box)}

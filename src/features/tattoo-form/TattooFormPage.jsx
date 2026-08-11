@@ -41,10 +41,34 @@ const initialFormData = {
   contactTimes: [],
 };
 
+const WHATSAPP_REDIRECT_DELAY_MS = 2200;
+
 function createSubmissionKey() {
   if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
 
   return `submission-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
+function wait(ms) {
+  return new Promise((resolve) => window.setTimeout(resolve, ms));
+}
+
+function preloadImage(url) {
+  if (!url) return Promise.resolve();
+
+  return new Promise((resolve) => {
+    const image = new Image();
+    image.decoding = "async";
+    image.onload = () => {
+      if (image.decode) {
+        image.decode().catch(() => {}).finally(resolve);
+      } else {
+        resolve();
+      }
+    };
+    image.onerror = resolve;
+    image.src = url;
+  });
 }
 
 function isStepValid(stepId, formData) {
@@ -205,22 +229,30 @@ export function TattooFormPage() {
         setHeTranslations(applyTextOverrides(translations.he, textsResult.he));
         setEnTranslations(applyTextOverrides(translations.en, textsResult.en));
 
+        const fallbackImageUrls = [
+          "/images/backgrounds/background.webp",
+          "/images/logo/topbar-logo-white.webp",
+          ...colorModes.map((colorModeId) => `/images/color-examples/${colorModeId}.jpeg`),
+          ...["male", "female"].flatMap((referenceId) => [
+            getBodyReferenceImageUrl(referenceId),
+            ...generalZones.map((zone) => getGeneralZoneImageUrl(zone.id, referenceId)),
+            ...generalZones.flatMap((zone) =>
+              getSpecificZones(zone.id).map((specificZoneId) =>
+                getSpecificZoneImageUrl(specificZoneId, referenceId),
+              ),
+            ),
+          ]),
+        ];
+
         const imageUrls = [
           ...stylesResult.styles.flatMap((s) => [s.colorPreviewUrl, s.blackGreyPreviewUrl]),
           ...bodyPhotosResult.images.map((i) => i.previewUrl),
           ...bodyPhotosResult.referenceImages.map((i) => i.previewUrl),
+          ...fallbackImageUrls,
         ].filter(Boolean);
 
         await Promise.all(
-          imageUrls.map(
-            (url) =>
-              new Promise((resolve) => {
-                const img = new Image();
-                img.onload = resolve;
-                img.onerror = resolve;
-                img.src = url;
-              }),
-          ),
+          [...new Set(imageUrls)].map((url) => preloadImage(url)),
         );
 
         if (!shouldIgnore) setRemoteLoaded(true);
@@ -390,37 +422,30 @@ export function TattooFormPage() {
     const whatsappUrl = buildWhatsappUrl(formData, t);
 
     if (submittedInquiryId) {
-      window.open(whatsappUrl, "_blank", "noopener,noreferrer");
+      submitLockRef.current = true;
+      setIsSubmitting(true);
+      await wait(WHATSAPP_REDIRECT_DELAY_MS);
+      window.location.assign(whatsappUrl);
       return;
     }
 
     submitLockRef.current = true;
     setIsSubmitting(true);
 
-    const whatsappWindow = window.open("about:blank", "_blank");
-    if (whatsappWindow) whatsappWindow.opener = null;
-
     try {
       const [result] = await Promise.all([
         performSubmission(),
-        new Promise((resolve) => window.setTimeout(resolve, 600)),
+        wait(WHATSAPP_REDIRECT_DELAY_MS),
       ]);
 
       if (result.error) {
-        whatsappWindow?.close();
         showToast(result.error);
         return;
       }
 
       setSubmittedInquiryId(result.inquiry?.id || submissionKeyRef.current);
-
-      if (whatsappWindow) {
-        whatsappWindow.location.href = whatsappUrl;
-      } else {
-        window.open(whatsappUrl, "_blank", "noopener,noreferrer");
-      }
+      window.location.assign(whatsappUrl);
     } catch (error) {
-      whatsappWindow?.close();
       showToast(error.message || "We could not submit the inquiry.");
     } finally {
       submitLockRef.current = false;
@@ -615,7 +640,7 @@ export function TattooFormPage() {
 
       <section className="form-stage" aria-label={t.intro}>
         <div
-          className={`form-card ${
+          className={`form-card form-card--${stepId} ${
             ["style", "generalZone", "specificZone", "placement"].includes(
               stepId,
             )
@@ -640,7 +665,10 @@ export function TattooFormPage() {
             canGoBack={currentStep > 0}
             canGoNext={canGoNext}
             isLastStep={isLastStep}
-            hideNext={autoAdvanceSteps.includes(stepId)}
+            hideNext={
+              autoAdvanceSteps.includes(stepId) &&
+              !["timing", "contactTime"].includes(stepId)
+            }
             isSubmitting={isSubmitting}
             submittingLabel="Sending..."
             onBack={goBack}

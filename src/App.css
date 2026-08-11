@@ -125,6 +125,8 @@
 .form-card {
   position: relative;
   box-sizing: border-box;
+  overflow-x: hidden;
+  overflow-y: visible;
   width: min(620px, 100%);
   max-width: 100%;
   padding: 36px 32px 30px;
@@ -214,28 +216,25 @@
 
 .step-motion {
   backface-visibility: hidden;
+  will-change: opacity, transform;
 }
 
 .step-motion--next {
-  animation: slide-step-next 0.42s cubic-bezier(0.22, 1, 0.36, 1);
+  animation: slide-step-next 0.52s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .step-motion--back {
-  animation: slide-step-back 0.42s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-[dir="rtl"] .step-motion--next {
-  animation-name: slide-step-next-rtl;
-}
-
-[dir="rtl"] .step-motion--back {
-  animation-name: slide-step-back-rtl;
+  animation: slide-step-back 0.48s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 @keyframes slide-step-next {
   from {
     opacity: 0;
-    transform: translateX(18px);
+    transform: translateX(48px);
+  }
+
+  55% {
+    opacity: 1;
   }
 
   to {
@@ -247,31 +246,11 @@
 @keyframes slide-step-back {
   from {
     opacity: 0;
-    transform: translateX(-18px);
+    transform: translateX(-48px);
   }
 
-  to {
+  55% {
     opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-@keyframes slide-step-next-rtl {
-  from {
-    opacity: 0;
-    transform: translateX(-18px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-@keyframes slide-step-back-rtl {
-  from {
-    opacity: 0;
-    transform: translateX(18px);
   }
 
   to {
@@ -494,8 +473,39 @@
 
 .more-styles {
   display: grid;
+  justify-items: center;
   gap: 12px;
   margin-top: 14px;
+}
+
+.option-card--more-styles {
+  width: 100%;
+}
+
+.option-card--more-styles .option-card__media::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(10, 9, 8, 0.08), rgba(10, 9, 8, 0.62)),
+    rgba(10, 9, 8, 0.2);
+}
+
+.more-style-overlay {
+  position: absolute;
+  inset: 50% auto auto 50%;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid rgba(226, 174, 113, 0.72);
+  border-radius: 50%;
+  background: rgba(10, 9, 8, 0.6);
+  color: var(--copper);
+  font-size: 1.5rem;
+  font-weight: 700;
+  transform: translate(-50%, -50%);
 }
 
 .more-styles-toggle {
@@ -510,9 +520,9 @@
   background: rgba(255, 255, 255, 0.025);
   color: var(--text);
   cursor: pointer;
-  font-size: 0.58rem;
+  font-size: 0.72rem;
   font-weight: 700;
-  letter-spacing: 0.18em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   transition:
     border-color 0.1s ease,
@@ -615,9 +625,9 @@
   min-height: 0;
   padding: 9px 7px 11px;
   color: var(--muted);
-  font-size: 0.66rem;
-  font-weight: 500;
-  letter-spacing: 0.18em;
+  font-size: 0.76rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
   line-height: 1.25;
   text-align: center;
   text-transform: uppercase;
@@ -649,9 +659,9 @@
 .ghost-button {
   border-radius: 8px;
   cursor: pointer;
-  font-size: 0.92rem;
+  font-size: 1rem;
   font-weight: 600;
-  letter-spacing: 0.2em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   transition:
     border-color 0.1s ease,
@@ -804,19 +814,24 @@
 
 .placement-delete {
   top: -13px;
-  inset-inline-end: -13px;
+  right: -13px;
 }
 
 .placement-rotate {
   top: -13px;
-  inset-inline-start: -13px;
+  left: -13px;
   cursor: grab;
 }
 
 .placement-resize {
   bottom: -13px;
-  inset-inline-end: -13px;
+  right: -13px;
   cursor: nwse-resize;
+}
+
+[dir="rtl"] .form-card--timing .option-card__label {
+  font-size: 0.82rem;
+  letter-spacing: 0.06em;
 }
 
 .upload-box {
@@ -940,6 +955,20 @@
   text-align: right;
 }
 
+[dir="rtl"] .option-card__label {
+  font-size: 0.88rem;
+  letter-spacing: 0.02em;
+  line-height: 1.32;
+}
+
+[dir="rtl"] .primary-button,
+[dir="rtl"] .secondary-button,
+[dir="rtl"] .ghost-button,
+[dir="rtl"] .more-styles-toggle {
+  font-size: 1.04rem;
+  letter-spacing: 0.03em;
+}
+
 @media (max-width: 720px) {
   .form-page::before {
     background: rgba(10, 9, 8, 0.34);
@@ -969,12 +998,16 @@
   }
 
   .form-stage {
-    align-items: center;
+    min-height: 100svh;
+    place-items: start center;
     padding: 82px 12px 24px;
+    overflow-y: visible;
   }
 
   .form-card,
   .form-card--wide {
+    overflow-x: hidden;
+    overflow-y: visible;
     padding: 24px 16px 22px;
     border-radius: 12px;
     box-shadow:
@@ -1010,6 +1043,14 @@
     flex-basis: calc((100% - 9px) / 2);
   }
 
+  .form-card--contactTime .options-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .form-card--contactTime .option-card {
+    width: 100%;
+  }
+
   .step h1 {
     margin-bottom: 22px;
     font-size: clamp(1.78rem, 9vw, 2.25rem);
@@ -1031,8 +1072,21 @@
 
   .option-card__label {
     padding: 8px 5px 10px;
-    font-size: 0.58rem;
-    letter-spacing: 0.12em;
+    font-size: 0.7rem;
+    letter-spacing: 0.08em;
+  }
+
+  [dir="rtl"] .option-card__label {
+    font-size: 0.86rem;
+    letter-spacing: 0.01em;
+  }
+
+  [dir="rtl"] .primary-button,
+  [dir="rtl"] .secondary-button,
+  [dir="rtl"] .ghost-button,
+  [dir="rtl"] .more-styles-toggle {
+    font-size: 1rem;
+    letter-spacing: 0.02em;
   }
 
   .placement-image {

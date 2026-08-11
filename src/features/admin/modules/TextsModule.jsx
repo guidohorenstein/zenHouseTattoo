@@ -10,7 +10,7 @@ const PAGES = [
       "brand", "intro", "step", "of", "back", "next", "quote",
       "clearAll", "delete", "mark", "marksEmpty", "referenceImages",
       "maxReferenceImages", "maxPlacementBoxes", "minIdeaCharacters",
-      "moreStyles", "showLessStyles", "otherStyleNeedsReference", "submitting",
+      "moreStyles", "showLessStyles", "submitting",
     ],
   },
   {
@@ -38,46 +38,22 @@ const PAGES = [
   {
     id: "step-4",
     label: "Step 4 — Style",
-    keys: [
-      "steps.style.title",
-      "options.fineLine", "options.realism", "options.newAge",
-      "options.traditional", "options.japanese", "options.blackwork",
-      "options.geometric", "options.biomechanical", "options.chicano",
-      "options.futuristic", "options.lettering", "options.dotwork",
-      "options.microRealism", "options.abstract", "options.floral",
-      "options.mandala", "options.neoTraditional", "options.newSchool",
-      "options.ornamental", "options.portrait", "options.sketch",
-      "options.surrealism", "options.trashPolka", "options.tribal",
-      "options.watercolor", "options.other",
-    ],
+    keys: ["steps.style.title"],
   },
   {
     id: "step-5",
     label: "Step 5 — Body model",
-    keys: [
-      "steps.bodyReference.title", "options.male", "options.female",
-    ],
+    keys: ["steps.bodyReference.title"],
   },
   {
     id: "step-6",
     label: "Step 6 — Body zone",
-    keys: [
-      "steps.generalZone.title",
-      "options.torso", "options.arm", "options.leg",
-      "options.hand", "options.face",
-    ],
+    keys: ["steps.generalZone.title"],
   },
   {
     id: "step-7",
     label: "Step 7 — Specific zone",
-    keys: [
-      "steps.specificZone.title",
-      "options.torsoFront", "options.torsoBack", "options.torsoRibs",
-      "options.armInner", "options.armOuter", "options.sleeve",
-      "options.legsFront", "options.legBack", "options.legSide",
-      "options.handInner", "options.handOuter",
-      "options.faceFront", "options.faceBack", "options.faceSide",
-    ],
+    keys: ["steps.specificZone.title"],
   },
   {
     id: "step-8",

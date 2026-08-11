@@ -1,4 +1,6 @@
-﻿export const WHATSAPP_PHONE = "972547505670";
+// wa.me expects the international phone number without "+" or spaces.
+export const WHATSAPP_PHONE = "972547505670";
+const WHATSAPP_BASE_URL = "https://wa.me";
 
 function optionLabel(t, value) {
   return t.options[value] || value || "-";
@@ -28,7 +30,9 @@ export function buildWhatsappMessage(formData, t) {
 }
 
 export function buildWhatsappUrl(formData, t) {
-  return `https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent(
+  const phone = WHATSAPP_PHONE.replace(/[^\d]/g, "");
+
+  return `${WHATSAPP_BASE_URL}/${phone}?text=${encodeURIComponent(
     buildWhatsappMessage(formData, t),
   )}`;
 }
