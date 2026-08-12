@@ -44,6 +44,25 @@ export async function listPublicFormTexts() {
   return { he, en, error: null };
 }
 
+export async function listPublicMoreStylePreviews() {
+  if (!hasSupabaseConfig) return { previews: [], error: null };
+
+  const { data, error } = await supabase
+    .from("more_styles_previews")
+    .select("*")
+    .in("color_mode", ["color", "blackGrey"]);
+
+  if (error) return { previews: [], error: error.message };
+
+  return {
+    previews: (data || []).map((preview) => ({
+      ...preview,
+      previewUrl: getAdminMediaUrl(preview.image_path),
+    })),
+    error: null,
+  };
+}
+
 export async function listPublicBodyPhotos() {
   if (!hasSupabaseConfig)
     return { categories: [], areas: [], images: [], referenceImages: [], error: null };

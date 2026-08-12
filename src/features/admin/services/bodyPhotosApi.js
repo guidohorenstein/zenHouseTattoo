@@ -1,5 +1,6 @@
 import { hasSupabaseConfig, supabase } from "../../../lib/supabaseClient";
 import { getAdminMediaUrl } from "./stylesApi";
+import { prepareImageForUpload } from "./imageCompression";
 
 const MEDIA_BUCKET = "admin-media";
 
@@ -124,10 +125,10 @@ export async function uploadBodyPhoto(file, slug) {
   }
   if (!file) return { path: "", previewUrl: "", error: null };
 
-  const extension = getFileExtension(file);
-  const path = `body-photos/${normalizeSlug(slug || "body-photo")}-${Date.now()}.${extension}`;
-  const { error } = await supabase.storage.from(MEDIA_BUCKET).upload(path, file, {
-    contentType: file.type,
+  const prepared = await prepareImageForUpload(file);
+  const path = `body-photos/${normalizeSlug(slug || "body-photo")}-${Date.now()}.${prepared.extension}`;
+  const { error } = await supabase.storage.from(MEDIA_BUCKET).upload(path, prepared.file, {
+    contentType: prepared.contentType,
     upsert: true,
   });
 
@@ -148,14 +149,4 @@ function withPreviewUrl(image) {
     ...image,
     previewUrl: getAdminMediaUrl(image.storage_path),
   };
-}
-
-function getFileExtension(file) {
-  const fromName = file.name.split(".").pop()?.toLowerCase();
-  if (fromName && ["jpg", "jpeg", "png", "webp"].includes(fromName)) {
-    return fromName === "jpeg" ? "jpg" : fromName;
-  }
-  if (file.type === "image/png") return "png";
-  if (file.type === "image/webp") return "webp";
-  return "jpg";
 }

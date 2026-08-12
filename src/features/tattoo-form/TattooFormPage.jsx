@@ -154,6 +154,18 @@ function toFallbackStyleOptions(styleIds, t, colorMode) {
   }));
 }
 
+function toMoreStylePreviewOption(previews, colorMode, label) {
+  const preview = previews.find((item) => item.color_mode === colorMode);
+  if (!preview?.previewUrl) return null;
+
+  return {
+    id: `more-styles-${colorMode}`,
+    label,
+    imageUrl: preview.previewUrl,
+    cropData: preview.crop_data,
+  };
+}
+
 function getRemoteBodyImage(bodyPhotos, { areaId, bodyReference, categoryId, imageRole }) {
   return bodyPhotos.images.find((item) => {
     const matchesTarget = areaId
@@ -195,6 +207,7 @@ export function TattooFormPage() {
   const toastTimerRef = useRef(null);
   const stepTransitionTimerRef = useRef(null);
   const [remoteStyles, setRemoteStyles] = useState([]);
+  const [moreStylePreviews, setMoreStylePreviews] = useState([]);
   const [remoteBodyPhotos, setRemoteBodyPhotos] = useState({
     categories: [],
     areas: [],
@@ -235,20 +248,28 @@ export function TattooFormPage() {
     async function loadRemoteContent() {
       try {
         const [
-          { listPublicBodyPhotos, listPublicTattooStyles, listPublicFormTexts },
+          {
+            listPublicBodyPhotos,
+            listPublicTattooStyles,
+            listPublicFormTexts,
+            listPublicMoreStylePreviews,
+          },
           { applyTextOverrides },
         ] = await Promise.all([
           import("./services/formContentApi"),
           import("./utils/applyTextOverrides"),
         ]);
-        const [stylesResult, bodyPhotosResult, textsResult] = await Promise.all([
+        const [stylesResult, bodyPhotosResult, textsResult, morePreviewsResult] =
+          await Promise.all([
           listPublicTattooStyles(),
           listPublicBodyPhotos(),
           listPublicFormTexts(),
+          listPublicMoreStylePreviews(),
         ]);
 
         if (!shouldIgnore) {
           setRemoteStyles(stylesResult.styles);
+          setMoreStylePreviews(morePreviewsResult.previews);
           setRemoteBodyPhotos({
             categories: bodyPhotosResult.categories,
             areas: bodyPhotosResult.areas,
@@ -282,6 +303,7 @@ export function TattooFormPage() {
 
           const imageUrls = [
             ...stylesResult.styles.flatMap((s) => [s.colorPreviewUrl, s.blackGreyPreviewUrl]),
+            ...morePreviewsResult.previews.map((preview) => preview.previewUrl),
             ...bodyPhotosResult.images.map((i) => i.previewUrl),
             ...bodyPhotosResult.referenceImages.map((i) => i.previewUrl),
             ...galleryImageUrls,
@@ -389,15 +411,11 @@ export function TattooFormPage() {
         language,
         formData.colorMode,
       ),
-      moreStylePreview: toRemoteStyleOptions(
-        remoteStyles.filter(
-          (style) =>
-            getStyleGroup(style, formData.colorMode) === "more" &&
-            style.is_more_styles_preview,
-        ),
-        language,
+      moreStylePreview: toMoreStylePreviewOption(
+        moreStylePreviews,
         formData.colorMode,
-      )[0],
+        t.moreStyles,
+      ),
       colors: toOptions(
         colorModes,
         t,
@@ -412,6 +430,7 @@ export function TattooFormPage() {
       formData.colorMode,
       formData.generalZone,
       language,
+      moreStylePreviews,
       remoteBodyPhotos,
       remoteStyles,
       t,

@@ -10,7 +10,7 @@ const PAGES = [
       "brand", "intro", "step", "of", "back", "next", "quote",
       "clearAll", "delete", "mark", "marksEmpty", "referenceImages",
       "maxReferenceImages", "maxPlacementBoxes", "minIdeaCharacters",
-      "moreStyles", "showLessStyles", "submitting",
+      "submitting",
     ],
   },
   {
@@ -38,7 +38,7 @@ const PAGES = [
   {
     id: "step-4",
     label: "Step 4 — Style",
-    keys: ["steps.style.title"],
+    keys: ["steps.style.title", "moreStyles", "showLessStyles"],
   },
   {
     id: "step-5",

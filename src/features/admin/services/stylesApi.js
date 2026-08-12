@@ -1,4 +1,5 @@
 import { hasSupabaseConfig, supabase } from "../../../lib/supabaseClient";
+import { prepareImageForUpload } from "./imageCompression";
 
 const STYLE_IMAGE_BUCKET = "admin-media";
 
@@ -73,14 +74,80 @@ export async function uploadTattooStyleImage(file, styleSlug, colorMode) {
 
   if (!file) return { path: "", previewUrl: "", error: null };
 
-  const extension = getFileExtension(file);
+  const prepared = await prepareImageForUpload(file);
   const safeSlug = normalizeSlug(styleSlug || "style");
-  const path = `tattoo-styles/${colorMode}/${safeSlug}-${Date.now()}.${extension}`;
+  const path = `tattoo-styles/${colorMode}/${safeSlug}-${Date.now()}.${prepared.extension}`;
 
   const { error } = await supabase.storage
     .from(STYLE_IMAGE_BUCKET)
-    .upload(path, file, {
-      contentType: file.type,
+    .upload(path, prepared.file, {
+      contentType: prepared.contentType,
+      upsert: true,
+    });
+
+  if (error) return { path: "", previewUrl: "", error: error.message };
+
+  return {
+    path,
+    previewUrl: getAdminMediaUrl(path),
+    error: null,
+  };
+}
+
+export async function listMoreStylePreviews() {
+  if (!hasSupabaseConfig) {
+    return { previews: [], error: "Supabase is not configured yet." };
+  }
+
+  const { data, error } = await supabase
+    .from("more_styles_previews")
+    .select("*")
+    .order("color_mode", { ascending: true });
+
+  return {
+    previews: (data || []).map(withMoreStylePreviewUrl),
+    error: error?.message || null,
+  };
+}
+
+export async function saveMoreStylePreview(preview) {
+  if (!hasSupabaseConfig) {
+    return { preview: null, error: "Supabase is not configured yet." };
+  }
+
+  const payload = {
+    color_mode: preview.color_mode,
+    image_path: preview.image_path || null,
+    crop_data: preview.crop_data || {},
+  };
+
+  const { data, error } = await supabase
+    .from("more_styles_previews")
+    .upsert(payload, { onConflict: "color_mode" })
+    .select("*")
+    .single();
+
+  return {
+    preview: data ? withMoreStylePreviewUrl(data) : null,
+    error: error?.message || null,
+  };
+}
+
+export async function uploadMoreStylePreviewImage(file, colorMode) {
+  if (!hasSupabaseConfig) {
+    return { path: "", previewUrl: "", error: "Supabase is not configured yet." };
+  }
+
+  if (!file) return { path: "", previewUrl: "", error: null };
+
+  const prepared = await prepareImageForUpload(file);
+  const safeMode = colorMode === "blackGrey" ? "black-grey" : "color";
+  const path = `more-styles/${safeMode}-${Date.now()}.${prepared.extension}`;
+
+  const { error } = await supabase.storage
+    .from(STYLE_IMAGE_BUCKET)
+    .upload(path, prepared.file, {
+      contentType: prepared.contentType,
       upsert: true,
     });
 
@@ -136,13 +203,9 @@ function withPreviewUrls(style) {
   };
 }
 
-function getFileExtension(file) {
-  const fromName = file.name.split(".").pop()?.toLowerCase();
-  if (fromName && ["jpg", "jpeg", "png", "webp"].includes(fromName)) {
-    return fromName === "jpeg" ? "jpg" : fromName;
-  }
-
-  if (file.type === "image/png") return "png";
-  if (file.type === "image/webp") return "webp";
-  return "jpg";
+function withMoreStylePreviewUrl(preview) {
+  return {
+    ...preview,
+    previewUrl: getAdminMediaUrl(preview.image_path),
+  };
 }

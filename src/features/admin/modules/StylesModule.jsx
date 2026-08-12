@@ -3,9 +3,12 @@ import { CroppedImage } from "../../../components/CroppedImage";
 import { normalizeCrop } from "../../../utils/cropUtils";
 import {
   deleteTattooStyle,
+  listMoreStylePreviews,
   listTattooStylesAdmin,
   normalizeSlug,
+  saveMoreStylePreview,
   saveTattooStyle,
+  uploadMoreStylePreviewImage,
   uploadTattooStyleImage,
 } from "../services/stylesApi";
 
@@ -32,6 +35,7 @@ const emptyStyle = {
 
 export function StylesModule({ canEdit = true }) {
   const [styles, setStyles] = useState([]);
+  const [moreStylePreviews, setMoreStylePreviews] = useState([]);
   const [draft, setDraft] = useState(emptyStyle);
   const [colorFile, setColorFile] = useState(null);
   const [blackGreyFile, setBlackGreyFile] = useState(null);
@@ -106,9 +110,13 @@ export function StylesModule({ canEdit = true }) {
 
   async function loadStyles() {
     setLoading(true);
-    const result = await listTattooStylesAdmin();
-    setStyles(result.styles);
-    setMessage(result.error || "");
+    const [stylesResult, previewsResult] = await Promise.all([
+      listTattooStylesAdmin(),
+      listMoreStylePreviews(),
+    ]);
+    setStyles(stylesResult.styles);
+    setMoreStylePreviews(previewsResult.previews);
+    setMessage(stylesResult.error || previewsResult.error || "");
     setLoading(false);
   }
 
@@ -240,38 +248,33 @@ export function StylesModule({ canEdit = true }) {
     setSaving(false);
   }
 
-  async function useMoreStylesPreview(selectedStyle) {
+  async function handleMorePreviewUpload(colorMode, file) {
     if (!canEdit) return;
+    if (!file) return;
 
     setSaving(true);
     setMessage("");
 
-    const currentPreviewStyles = sortedStyles.filter(
-      (style) => style.id !== selectedStyle.id && style.is_more_styles_preview,
-    );
+    const upload = await uploadMoreStylePreviewImage(file, colorMode);
+    if (upload.error) {
+      setMessage(upload.error);
+      setSaving(false);
+      return;
+    }
 
-    const clearResults = await Promise.all(
-      currentPreviewStyles.map((style) =>
-        saveTattooStyle({
-          ...style,
-          is_more_styles_preview: false,
-        }),
-      ),
-    );
-    const clearError = clearResults.find((result) => result.error)?.error;
-    const selectResult = clearError
-      ? { error: clearError }
-      : await saveTattooStyle({
-          ...selectedStyle,
-          is_more_styles_preview: true,
-        });
-    const error = selectResult.error;
+    const currentPreview = getMoreStylePreview(moreStylePreviews, colorMode);
+    const result = await saveMoreStylePreview({
+      ...currentPreview,
+      color_mode: colorMode,
+      image_path: upload.path,
+      crop_data: currentPreview?.crop_data || {},
+    });
 
-    if (error) {
-      setMessage(error);
+    if (result.error) {
+      setMessage(result.error);
     } else {
       await loadStyles();
-      setMessage("More styles preview updated.");
+      setMessage("More styles image saved.");
     }
 
     setSaving(false);
@@ -299,6 +302,26 @@ export function StylesModule({ canEdit = true }) {
 
   async function saveStyleCrop(cropData) {
     if (!canEdit) return;
+
+    if (cropTarget?.preview) {
+      setSaving(true);
+      const result = await saveMoreStylePreview({
+        ...cropTarget.preview,
+        crop_data: cropData,
+      });
+
+      if (result.error) {
+        setMessage(result.error);
+      } else {
+        setCropTarget(null);
+        await loadStyles();
+        setMessage("More styles framing saved.");
+      }
+
+      setSaving(false);
+      return;
+    }
+
     if (!cropTarget?.style) return;
 
     const cropField =
@@ -419,6 +442,15 @@ export function StylesModule({ canEdit = true }) {
           </div>
         ) : null}
 
+        <MoreStylesPreviewManager
+          canEdit={canEdit}
+          colorPreview={getMoreStylePreview(moreStylePreviews, "color")}
+          blackGreyPreview={getMoreStylePreview(moreStylePreviews, "blackGrey")}
+          onAdjust={(preview) => setCropTarget({ preview })}
+          onUpload={handleMorePreviewUpload}
+          saving={saving}
+        />
+
         <div className="admin-preview-board">
           <StyleDropZone
             draggedStyleId={draggedStyleId}
@@ -431,7 +463,6 @@ export function StylesModule({ canEdit = true }) {
             onRemove={removeStyle}
             onOpenCrop={setCropTarget}
             onStartDrag={setDraggedStyleId}
-            onUseMorePreview={useMoreStylesPreview}
             canEdit={canEdit}
             styles={mainStyles}
             title="Always visible"
@@ -448,7 +479,6 @@ export function StylesModule({ canEdit = true }) {
             onRemove={removeStyle}
             onOpenCrop={setCropTarget}
             onStartDrag={setDraggedStyleId}
-            onUseMorePreview={useMoreStylesPreview}
             canEdit={canEdit}
             styles={moreStyles}
             title="Show more"
@@ -534,9 +564,6 @@ export function StylesModule({ canEdit = true }) {
                 </div>
               </div>
               <small>{style.is_active ? style.placement_group : "hidden"}</small>
-              {style.is_more_styles_preview ? (
-                <span className="admin-more-preview-pill">More preview</span>
-              ) : null}
               <div className="admin-style-actions">
                 {canEdit ? (
                   <>
@@ -580,22 +607,74 @@ export function StylesModule({ canEdit = true }) {
       {cropTarget ? (
         <StyleCropAdjuster
           cropData={
-            cropTarget.mode === "blackGrey"
+            cropTarget.preview
+              ? cropTarget.preview.crop_data
+              : cropTarget.mode === "blackGrey"
               ? cropTarget.style.black_grey_crop_data
               : cropTarget.style.color_crop_data
           }
           imageUrl={
-            cropTarget.mode === "blackGrey"
+            cropTarget.preview
+              ? cropTarget.preview.previewUrl
+              : cropTarget.mode === "blackGrey"
               ? cropTarget.style.blackGreyPreviewUrl
               : cropTarget.style.colorPreviewUrl
           }
           onClose={() => setCropTarget(null)}
           onSave={saveStyleCrop}
           saving={saving}
-          title={`${cropTarget.style.title_en} - ${cropTarget.mode === "blackGrey" ? "Black & grey" : "Color"}`}
+          title={
+            cropTarget.preview
+              ? `More styles - ${
+                  cropTarget.preview.color_mode === "blackGrey" ? "Black & grey" : "Color"
+                }`
+              : `${cropTarget.style.title_en} - ${
+                  cropTarget.mode === "blackGrey" ? "Black & grey" : "Color"
+                }`
+          }
         />
       ) : null}
     </section>
+  );
+}
+
+function MoreStylesPreviewManager({
+  blackGreyPreview,
+  canEdit,
+  colorPreview,
+  onAdjust,
+  onUpload,
+  saving,
+}) {
+  return (
+    <div className="admin-more-styles-preview-manager">
+      <div>
+        <h4>More styles card image</h4>
+        <p>This image only opens the extra styles. It is not a selectable style.</p>
+      </div>
+      <div className="admin-more-styles-preview-grid">
+        <ImageUploadField
+          cropData={colorPreview?.crop_data}
+          disabled={!canEdit}
+          file={null}
+          imageUrl={colorPreview?.previewUrl}
+          label="More styles - Color"
+          onAdjust={() => colorPreview && onAdjust(colorPreview)}
+          onChange={(file) => onUpload("color", file)}
+        />
+        <ImageUploadField
+          cropData={blackGreyPreview?.crop_data}
+          disabled={!canEdit}
+          file={null}
+          imageUrl={blackGreyPreview?.previewUrl}
+          label="More styles - Black & grey"
+          onAdjust={() => blackGreyPreview && onAdjust(blackGreyPreview)}
+          onChange={(file) => onUpload("blackGrey", file)}
+        />
+      </div>
+      {!canEdit ? <p className="admin-muted-light">Viewer mode.</p> : null}
+      {saving ? <p className="admin-muted-light">Saving image...</p> : null}
+    </div>
   );
 }
 
@@ -706,6 +785,7 @@ function StyleEditor({
       <div className="admin-upload-grid">
         <ImageUploadField
           cropData={draft.color_crop_data}
+          disabled={saving}
           file={colorFile}
           imageUrl={draft.colorPreviewUrl}
           label="Color image"
@@ -714,6 +794,7 @@ function StyleEditor({
         />
         <ImageUploadField
           cropData={draft.black_grey_crop_data}
+          disabled={saving}
           file={blackGreyFile}
           imageUrl={draft.blackGreyPreviewUrl}
           label="Black & grey image"
@@ -741,7 +822,6 @@ function StyleDropZone({
   onRemove,
   onOpenCrop,
   onStartDrag,
-  onUseMorePreview,
   styles,
   title,
 }) {
@@ -772,7 +852,6 @@ function StyleDropZone({
             onRemove={onRemove}
             onOpenCrop={onOpenCrop}
             onStartDrag={onStartDrag}
-            onUseMorePreview={onUseMorePreview}
             style={style}
           />
         ))}
@@ -794,7 +873,6 @@ function StylePreviewCard({
   onRemove,
   onOpenCrop,
   onStartDrag,
-  onUseMorePreview,
   style,
 }) {
   const imageUrl =
@@ -839,15 +917,6 @@ function StylePreviewCard({
               Adjust
             </button>
             <button type="button" onClick={() => onHide(style)}>Hide</button>
-            {group === "more" ? (
-              <button
-                className={style.is_more_styles_preview ? "is-active" : ""}
-                type="button"
-                onClick={() => onUseMorePreview(style)}
-              >
-                Preview
-              </button>
-            ) : null}
             <button type="button" onClick={() => onRemove(style)}>Delete</button>
           </>
         ) : (
@@ -858,7 +927,7 @@ function StylePreviewCard({
   );
 }
 
-function ImageUploadField({ cropData, file, imageUrl, label, onAdjust, onChange }) {
+function ImageUploadField({ cropData, disabled = false, file, imageUrl, label, onAdjust, onChange }) {
   return (
     <div className="admin-upload-card">
       <label>
@@ -871,13 +940,14 @@ function ImageUploadField({ cropData, file, imageUrl, label, onAdjust, onChange 
         {file && imageUrl ? <small>New file selected: {file.name}</small> : null}
         <input
           accept="image/jpeg,image/png,image/webp"
+          disabled={disabled}
           type="file"
           onChange={(event) => onChange(event.target.files?.[0] || null)}
         />
       </label>
       <button
         className="admin-light-button"
-        disabled={!imageUrl}
+        disabled={!imageUrl || disabled}
         type="button"
         onClick={onAdjust}
       >
@@ -982,6 +1052,10 @@ function getStyleModePatch(mode, group, sortOrder) {
     color_placement_group: group,
     color_sort_order: sortOrder,
   };
+}
+
+function getMoreStylePreview(previews, colorMode) {
+  return previews.find((preview) => preview.color_mode === colorMode) || null;
 }
 
 function sortStylesForMode(styles, mode) {

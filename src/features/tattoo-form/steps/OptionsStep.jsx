@@ -59,10 +59,7 @@ export function OptionsStep({
   }
 
   function renderMoreStylesButton() {
-    const previewOption =
-      morePreviewOption ||
-      moreOptions.find((option) => option.imageUrl) ||
-      options.find((option) => option.imageUrl);
+    const previewOption = morePreviewOption;
 
     if (variant !== "styles" || !previewOption?.imageUrl) {
       return (
