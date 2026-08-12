@@ -1,4 +1,3 @@
-﻿const MAX_REFERENCE_IMAGES = 4;
 const MAX_REFERENCE_IMAGE_SIZE = 10 * 1024 * 1024;
 const ALLOWED_REFERENCE_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 
@@ -12,16 +11,17 @@ export function IdeaStep({
   referenceImages,
   onReferenceImagesChange,
   labels,
+  maxReferenceImages = 4,
   notice,
   onImageError,
 }) {
-  const canAddImage = referenceImages.length < MAX_REFERENCE_IMAGES;
+  const canAddImage = referenceImages.length < maxReferenceImages;
   const characterCount = value.length;
   const hasEnoughCharacters = characterCount >= 20;
 
   function handleFilesChange(event) {
     const selectedFiles = Array.from(event.target.files || []);
-    const freeSlots = Math.max(0, MAX_REFERENCE_IMAGES - referenceImages.length);
+    const freeSlots = Math.max(0, maxReferenceImages - referenceImages.length);
     const validFiles = [];
 
     for (const file of selectedFiles) {
@@ -41,7 +41,7 @@ export function IdeaStep({
     }
 
     if (selectedFiles.length > freeSlots) {
-      onImageError?.("You can upload up to 4 reference images.");
+      onImageError?.(`You can upload up to ${maxReferenceImages} reference images.`);
     }
 
     const mappedFiles = validFiles.map((file) => ({
@@ -122,6 +122,3 @@ export function IdeaStep({
     </div>
   );
 }
-
-
-

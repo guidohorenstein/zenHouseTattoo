@@ -25,6 +25,14 @@ import { PlacementStep } from "./steps/PlacementStep";
 import { IdeaStep } from "./steps/IdeaStep";
 import { buildWhatsappUrl } from "./utils/buildWhatsappMessage";
 
+const defaultFormSettings = {
+  whatsappPhone: "972547505670",
+  defaultLanguage: "he",
+  formEnabled: true,
+  maxReferenceImages: 4,
+  maxPlacementBoxes: 3,
+};
+
 const initialFormData = {
   fullName: "",
   email: "",
@@ -203,11 +211,13 @@ export function TattooFormPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submittedInquiryId, setSubmittedInquiryId] = useState("");
   const submitLockRef = useRef(false);
+  const languageTouchedRef = useRef(false);
   const submissionKeyRef = useRef(createSubmissionKey());
   const toastTimerRef = useRef(null);
   const stepTransitionTimerRef = useRef(null);
   const [remoteStyles, setRemoteStyles] = useState([]);
   const [moreStylePreviews, setMoreStylePreviews] = useState([]);
+  const [formSettings, setFormSettings] = useState(defaultFormSettings);
   const [remoteBodyPhotos, setRemoteBodyPhotos] = useState({
     categories: [],
     areas: [],
@@ -252,6 +262,7 @@ export function TattooFormPage() {
             listPublicBodyPhotos,
             listPublicTattooStyles,
             listPublicFormTexts,
+            listPublicFormSettings,
             listPublicMoreStylePreviews,
           },
           { applyTextOverrides },
@@ -259,17 +270,28 @@ export function TattooFormPage() {
           import("./services/formContentApi"),
           import("./utils/applyTextOverrides"),
         ]);
-        const [stylesResult, bodyPhotosResult, textsResult, morePreviewsResult] =
+        const [
+          stylesResult,
+          bodyPhotosResult,
+          textsResult,
+          settingsResult,
+          morePreviewsResult,
+        ] =
           await Promise.all([
           listPublicTattooStyles(),
           listPublicBodyPhotos(),
           listPublicFormTexts(),
+          listPublicFormSettings(),
           listPublicMoreStylePreviews(),
         ]);
 
         if (!shouldIgnore) {
           setRemoteStyles(stylesResult.styles);
           setMoreStylePreviews(morePreviewsResult.previews);
+          setFormSettings(settingsResult.settings);
+          if (!languageTouchedRef.current) {
+            setLanguage(settingsResult.settings.defaultLanguage);
+          }
           setRemoteBodyPhotos({
             categories: bodyPhotosResult.categories,
             areas: bodyPhotosResult.areas,
@@ -284,33 +306,7 @@ export function TattooFormPage() {
             "/images/logo/topbar-logo-white.webp",
           ];
 
-          const galleryImageUrls = [
-            ...colorModes.map((colorModeId) => `/images/color-examples/${colorModeId}.jpeg`),
-            ...tattooStyles.flatMap((styleId) => [
-              `/images/tattoo-styles/thumbs/${styleId}.jpg`,
-              `/images/tattoo-styles/black-grey/thumbs/${styleId}.jpg`,
-            ]),
-            ...["male", "female"].flatMap((referenceId) => [
-              getBodyReferenceImageUrl(referenceId),
-              ...generalZones.map((zone) => getGeneralZoneImageUrl(zone.id, referenceId)),
-              ...generalZones.flatMap((zone) =>
-                getSpecificZones(zone.id).map((specificZoneId) =>
-                  getSpecificZoneImageUrl(specificZoneId, referenceId),
-                ),
-              ),
-            ]),
-          ];
-
-          const imageUrls = [
-            ...stylesResult.styles.flatMap((s) => [s.colorPreviewUrl, s.blackGreyPreviewUrl]),
-            ...morePreviewsResult.previews.map((preview) => preview.previewUrl),
-            ...bodyPhotosResult.images.map((i) => i.previewUrl),
-            ...bodyPhotosResult.referenceImages.map((i) => i.previewUrl),
-            ...galleryImageUrls,
-          ].filter(Boolean);
-
           Promise.all(criticalImageUrls.map((url) => preloadImage(url))).catch(() => {});
-          Promise.all([...new Set(imageUrls)].map((url) => preloadImage(url))).catch(() => {});
         }
       } catch {
         // The local fallback form remains usable if remote content is unavailable.
@@ -505,7 +501,7 @@ export function TattooFormPage() {
   async function submit() {
     if (!canGoNext || submitLockRef.current) return;
 
-    const whatsappUrl = buildWhatsappUrl(formData, t);
+    const whatsappUrl = buildWhatsappUrl(formData, t, formSettings.whatsappPhone);
 
     if (submittedInquiryId) {
       submitLockRef.current = true;
@@ -614,6 +610,7 @@ export function TattooFormPage() {
           value={formData.placementBoxes}
           onChange={(value) => updateFormData("placementBoxes", value)}
           labels={t}
+          maxPlacementBoxes={formSettings.maxPlacementBoxes}
         />
       ),
       style: (
@@ -652,6 +649,7 @@ export function TattooFormPage() {
             updateFormData("referenceImages", value)
           }
           labels={t}
+          maxReferenceImages={formSettings.maxReferenceImages}
           notice={ideaNotice}
         />
       ),
@@ -696,7 +694,13 @@ export function TattooFormPage() {
           label={t.step}
           ofLabel={t.of}
         />
-        <LanguageSwitcher language={language} onChange={setLanguage} />
+        <LanguageSwitcher
+          language={language}
+          onChange={(nextLanguage) => {
+            languageTouchedRef.current = true;
+            setLanguage(nextLanguage);
+          }}
+        />
       </header>
 
       <section className="form-stage" aria-label={t.intro}>
@@ -709,6 +713,15 @@ export function TattooFormPage() {
               : ""
           }`}
         >
+          {!formSettings.formEnabled ? (
+            <div className="step">
+              <h1>Zen House Tattoo</h1>
+              <p>
+                The consultation form is temporarily paused. Please try again later.
+              </p>
+            </div>
+          ) : (
+            <>
           {/* <p className="eyebrow">
             {t.step} {currentStep + 1} {t.of} {formSteps.length}
           </p> */}
@@ -744,6 +757,8 @@ export function TattooFormPage() {
               <p>{t.submitting}</p>
             </div>
           ) : null}
+            </>
+          )}
         </div>
       </section>
 

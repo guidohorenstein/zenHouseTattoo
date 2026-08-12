@@ -5,17 +5,19 @@ import { AdminShell } from "./components/AdminShell";
 import { getCurrentAdminSession, onAdminAuthChange, signInAdmin, signOutAdmin } from "./services/adminAuth";
 import {
   addInquiryNote,
+  archiveInquiry,
   deleteInquiry,
   discardInquiry,
   getInquiryDetail,
   listDashboardMetrics,
   listInquiries,
+  restoreInquiry,
   updateInquiryStatus,
 } from "./services/inquiriesApi";
 import { DashboardModule } from "./modules/DashboardModule";
 import { BodyPhotosModule } from "./modules/BodyPhotosModule";
-import { PlaceholderModule } from "./modules/PlaceholderModule";
 import { RequestsModule } from "./modules/RequestsModule";
+import { SettingsModule } from "./modules/SettingsModule";
 import { StylesModule } from "./modules/StylesModule";
 import { TextsModule } from "./modules/TextsModule";
 import { UsersModule } from "./modules/UsersModule";
@@ -30,6 +32,7 @@ export function AdminPage() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [activeModule, setActiveModule] = useState("dashboard");
   const [activeFilter, setActiveFilter] = useState(null);
+  const [includeArchived, setIncludeArchived] = useState(false);
   const [error, setError] = useState("");
   const [metrics, setMetrics] = useState(null);
   const [inquiries, setInquiries] = useState([]);
@@ -49,14 +52,14 @@ export function AdminPage() {
     setIsRefreshing(true);
     const [metricsResult, inquiriesResult] = await Promise.all([
       listDashboardMetrics(),
-      listInquiries(),
+      listInquiries({ includeArchived }),
     ]);
 
     setMetrics(metricsResult.metrics);
     setInquiries(inquiriesResult.inquiries);
     setError(metricsResult.error || inquiriesResult.error || "");
     setIsRefreshing(false);
-  }, []);
+  }, [includeArchived]);
 
   useEffect(() => {
     async function loadSession() {
@@ -161,6 +164,25 @@ export function AdminPage() {
     await loadAdminData();
   }
 
+  async function handleArchive(inquiry) {
+    if (!permissions.canEditRequests) {
+      setError("Viewer users can only read requests.");
+      return;
+    }
+
+    const result = inquiry.archived_at
+      ? await restoreInquiry(inquiry.id)
+      : await archiveInquiry(inquiry.id);
+
+    if (result.error) {
+      setError(result.error);
+      return;
+    }
+
+    setSelectedDetail(null);
+    await loadAdminData();
+  }
+
   async function handleAddNote(event, inquiryId) {
     event.preventDefault();
 
@@ -240,14 +262,17 @@ export function AdminPage() {
         <RequestsModule
           activeFilter={activeFilter}
           detailLoading={detailLoading}
+          includeArchived={includeArchived}
           inquiries={inquiries}
           noteText={noteText}
           onAddNote={handleAddNote}
+          onArchive={handleArchive}
           onDelete={handleDelete}
           onDiscard={handleDiscard}
           onDrillUp={handleDrillUp}
           onNoteTextChange={setNoteText}
           onRequestDetail={loadInquiryDetail}
+          onToggleArchived={setIncludeArchived}
           onStatusChange={handleStatusChange}
           permissions={permissions}
           selectedDetail={selectedDetail}
@@ -271,7 +296,7 @@ export function AdminPage() {
       ) : null}
 
       {activeModule === "settings" ? (
-        <PlaceholderModule title="Settings" text="Soon: WhatsApp/Twilio, domain, admin preferences and form behavior." />
+        <SettingsModule canEdit={permissions.canEditSettings} />
       ) : null}
     </AdminShell>
   );

@@ -22,16 +22,23 @@ const inquiryListSelect = [
   "specific_zone",
   "styles",
   "created_at",
+  "archived_at",
 ].join(", ");
 
-export async function listInquiries() {
+export async function listInquiries({ includeArchived = false } = {}) {
   if (!hasSupabaseConfig) return { inquiries: [], error: "Supabase is not configured yet." };
 
-  const { data, error } = await supabase
+  let query = supabase
     .from("inquiries")
     .select(inquiryListSelect)
     .order("created_at", { ascending: false })
     .limit(100);
+
+  if (!includeArchived) {
+    query = query.is("archived_at", null);
+  }
+
+  const { data, error } = await query;
 
   return { inquiries: data || [], error: error?.message || null };
 }
@@ -106,6 +113,28 @@ export async function discardInquiry(inquiry, adminId) {
   return updateInquiryStatus(inquiry, "cancelled", adminId);
 }
 
+export async function archiveInquiry(inquiryId) {
+  if (!hasSupabaseConfig) return { error: "Supabase is not configured yet." };
+
+  const { error } = await supabase
+    .from("inquiries")
+    .update({ archived_at: new Date().toISOString() })
+    .eq("id", inquiryId);
+
+  return { error: error?.message || null };
+}
+
+export async function restoreInquiry(inquiryId) {
+  if (!hasSupabaseConfig) return { error: "Supabase is not configured yet." };
+
+  const { error } = await supabase
+    .from("inquiries")
+    .update({ archived_at: null })
+    .eq("id", inquiryId);
+
+  return { error: error?.message || null };
+}
+
 export async function deleteInquiry(inquiryId) {
   if (!hasSupabaseConfig) return { error: "Supabase is not configured yet." };
 
@@ -135,11 +164,17 @@ export async function listDashboardMetrics() {
 
   const { data, error } = await supabase
     .from("inquiries")
-    .select("status, styles, general_zone, timing, contact_times, created_at");
+    .select(
+      "status, styles, general_zone, specific_zone, timing, contact_times, color_mode, body_reference, has_tattoos, created_at",
+    )
+    .is("archived_at", null);
 
   if (error) return { metrics: null, error: error.message };
 
   const total = data.length;
+  const now = Date.now();
+  const sevenDaysAgo = now - 7 * 24 * 60 * 60 * 1000;
+  const thirtyDaysAgo = now - 30 * 24 * 60 * 60 * 1000;
   const byStatus = data.reduce((acc, inquiry) => {
     acc[inquiry.status] = (acc[inquiry.status] || 0) + 1;
     return acc;
@@ -148,25 +183,64 @@ export async function listDashboardMetrics() {
   const styles = data.flatMap((inquiry) => inquiry.styles || []);
   const timings = data.map((inquiry) => inquiry.timing).filter(Boolean);
   const contactTimes = data.flatMap((inquiry) => inquiry.contact_times || []);
+  const colors = data.map((inquiry) => inquiry.color_mode).filter(Boolean);
+  const bodies = data.map((inquiry) => inquiry.body_reference).filter(Boolean);
+  const tattooHistory = data.map((inquiry) => inquiry.has_tattoos).filter(Boolean);
+  const recentInquiries = data.filter(
+    (inquiry) => new Date(inquiry.created_at).getTime() >= sevenDaysAgo,
+  );
+  const last30Days = data.filter(
+    (inquiry) => new Date(inquiry.created_at).getTime() >= thirtyDaysAgo,
+  );
   const topStyle = getMostCommon(styles);
   const topZone = getMostCommon(data.map((inquiry) => inquiry.general_zone).filter(Boolean));
   const topTiming = getMostCommon(timings);
   const topContactTime = getMostCommon(contactTimes);
   const completed = byStatus.completed || 0;
+  const quoted = byStatus.quoted || 0;
+  const booked = byStatus.booked || 0;
+  const requested = byStatus.requested || 0;
+  const noResponse = byStatus.no_response || 0;
+  const cancelled = byStatus.cancelled || 0;
+  const activePipeline = requested + noResponse + quoted + booked;
+  const quoteRate = total ? Math.round(((quoted + booked + completed) / total) * 100) : 0;
+  const bookingRate = total ? Math.round(((booked + completed) / total) * 100) : 0;
+  const responseRisk = total ? Math.round((noResponse / total) * 100) : 0;
 
   return {
     metrics: {
       total,
-      requested: byStatus.requested || 0,
-      quoted: byStatus.quoted || 0,
-      booked: byStatus.booked || 0,
+      requested,
+      noResponse,
+      quoted,
+      booked,
       completed,
-      cancelled: byStatus.cancelled || 0,
+      cancelled,
+      activePipeline,
+      recentCount: recentInquiries.length,
+      last30Count: last30Days.length,
+      averageWeeklyDemand: Math.round((last30Days.length / 30) * 7),
       conversionRate: total ? Math.round((completed / total) * 100) : 0,
+      quoteRate,
+      bookingRate,
+      responseRisk,
       topStyle,
       topZone,
       topTiming,
       topContactTime,
+      statusBreakdown: toBreakdown(byStatus),
+      dailyTrend: getDailyTrend(data, 14),
+      topStyles: getTopCounts(styles, 5),
+      topZones: getTopCounts(data.map((inquiry) => inquiry.general_zone).filter(Boolean), 5),
+      topSpecificZones: getTopCounts(
+        data.map((inquiry) => inquiry.specific_zone).filter(Boolean),
+        5,
+      ),
+      timingBreakdown: getTopCounts(timings, 4),
+      contactBreakdown: getTopCounts(contactTimes, 3),
+      colorBreakdown: getTopCounts(colors, 2),
+      bodyBreakdown: getTopCounts(bodies, 2),
+      tattooHistoryBreakdown: getTopCounts(tattooHistory, 2),
     },
     error: null,
   };
@@ -208,6 +282,51 @@ function getMostCommon(values) {
   }, {});
 
   return Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0];
+}
+
+function getTopCounts(values, limit = 5) {
+  if (values.length === 0) return [];
+
+  const counts = values.reduce((acc, value) => {
+    acc[value] = (acc[value] || 0) + 1;
+    return acc;
+  }, {});
+
+  return Object.entries(counts)
+    .map(([value, count]) => ({ value, count }))
+    .sort((a, b) => b.count - a.count || a.value.localeCompare(b.value))
+    .slice(0, limit);
+}
+
+function toBreakdown(byStatus) {
+  return inquiryStatuses.map((status) => ({
+    value: status,
+    count: byStatus[status] || 0,
+  }));
+}
+
+function getDailyTrend(inquiries, days) {
+  const formatter = new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+  });
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  return Array.from({ length: days }, (_, index) => {
+    const date = new Date(today);
+    date.setDate(today.getDate() - (days - 1 - index));
+    const start = date.getTime();
+    const end = start + 24 * 60 * 60 * 1000;
+
+    return {
+      label: formatter.format(date),
+      count: inquiries.filter((inquiry) => {
+        const createdAt = new Date(inquiry.created_at).getTime();
+        return createdAt >= start && createdAt < end;
+      }).length,
+    };
+  });
 }
 
 

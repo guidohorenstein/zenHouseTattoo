@@ -7,6 +7,7 @@ export function getAdminPermissions(profile) {
   return {
     canEditBodyPhotos: canEditContent,
     canEditRequests: canEditContent,
+    canEditSettings: canEditContent,
     canEditStyles: canEditContent,
     canEditTexts: canEditContent,
     canManageUsers: isOwner,

@@ -35,13 +35,21 @@ function getPointerAngle(event, center) {
   return (Math.atan2(event.clientY - center.y, event.clientX - center.x) * 180) / Math.PI;
 }
 
-export function PlacementStep({ title, note, imageUrl, value, onChange, labels }) {
+export function PlacementStep({
+  title,
+  note,
+  imageUrl,
+  value,
+  onChange,
+  labels,
+  maxPlacementBoxes = 3,
+}) {
   const canvasRef = useRef(null);
   const [draft, setDraft] = useState(null);
   const [draggingBox, setDraggingBox] = useState(null);
   const [resizingBox, setResizingBox] = useState(null);
   const [rotatingBox, setRotatingBox] = useState(null);
-  const reachedBoxLimit = value.length >= 3;
+  const reachedBoxLimit = value.length >= maxPlacementBoxes;
 
   function startDrawing(event) {
     if (!canvasRef.current) return;
@@ -206,7 +214,7 @@ export function PlacementStep({ title, note, imageUrl, value, onChange, labels }
       <div className="placement">
         <div className="placement-tools">
           <span className="placement-limit">
-            {value.length}/3 · {labels.maxPlacementBoxes}
+            {value.length}/{maxPlacementBoxes} - {labels.maxPlacementBoxes}
           </span>
           <button
             className="ghost-button"

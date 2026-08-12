@@ -14,15 +14,6 @@ function getAllowedOrigin(request: Request) {
   if (!origin) return ALLOWED_ORIGINS[0];
   if (ALLOWED_ORIGINS.includes(origin)) return origin;
 
-  try {
-    const hostname = new URL(origin).hostname;
-    if (hostname.endsWith(".workers.dev") || hostname.endsWith(".pages.dev")) {
-      return origin;
-    }
-  } catch {
-    return "";
-  }
-
   return "";
 }
 

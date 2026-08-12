@@ -770,7 +770,7 @@
   width: 100%;
   max-height: 160px;
   object-fit: cover;
-  object-position: center;
+  object-position: center 28%;
 }
 
 .placement-tools {
@@ -1118,16 +1118,25 @@
   }
 
   .placement-image {
-    max-height: 42vh;
+    max-height: 40vh;
   }
 
   .placement-guide {
-    width: min(220px, 82vw);
-    margin-bottom: 8px;
+    width: min(170px, 58vw);
+    margin: -8px auto 6px;
+    border-radius: 8px;
   }
 
   .placement-guide img {
-    max-height: 112px;
+    max-height: 74px;
+  }
+
+  .form-card--placement .step {
+    gap: 10px;
+  }
+
+  .form-card--placement .navigation {
+    margin-top: 10px;
   }
 
   .navigation,
@@ -1419,6 +1428,258 @@ button.admin-metric {
   font-size: 0.78rem;
 }
 
+.admin-dashboard {
+  gap: 16px;
+}
+
+.admin-dashboard-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(190px, 260px);
+  gap: 16px;
+  align-items: stretch;
+  overflow: hidden;
+  border: 1px solid #dce3ee;
+  border-radius: 14px;
+  background:
+    linear-gradient(135deg, rgba(166, 124, 82, 0.14), rgba(37, 99, 235, 0.08) 48%, rgba(255, 255, 255, 0) 72%),
+    #ffffff;
+  box-shadow: 0 14px 38px rgba(16, 24, 40, 0.08);
+  padding: 20px;
+}
+
+.admin-dashboard-hero h3 {
+  margin: 0;
+  color: #101820;
+  font-size: clamp(1.5rem, 3vw, 2.25rem);
+  line-height: 1.08;
+}
+
+.admin-dashboard-hero p {
+  max-width: 680px;
+  margin: 8px 0 0;
+  color: #667085;
+  line-height: 1.5;
+}
+
+.admin-dashboard-score {
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  border: 1px solid rgba(166, 124, 82, 0.32);
+  border-radius: 12px;
+  background: rgba(255, 250, 244, 0.78);
+  padding: 16px;
+  text-align: center;
+}
+
+.admin-dashboard-score span,
+.admin-dashboard-score small {
+  color: #8a5c2d;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.admin-dashboard-score strong {
+  color: #101820;
+  font-size: 2.5rem;
+  line-height: 1;
+}
+
+.admin-dashboard-score small {
+  color: #667085;
+  font-size: 0.66rem;
+}
+
+.admin-dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.admin-dashboard-panel {
+  display: grid;
+  gap: 14px;
+  min-height: 250px;
+  border: 1px solid #dce3ee;
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: 0 10px 28px rgba(16, 24, 40, 0.075);
+  padding: 16px;
+}
+
+.admin-dashboard-panel-heading h4,
+.admin-dashboard-panel-heading p,
+.admin-mini-breakdown h5 {
+  margin: 0;
+}
+
+.admin-dashboard-panel-heading h4 {
+  color: #101820;
+  font-size: 1rem;
+}
+
+.admin-dashboard-panel-heading p {
+  margin-top: 3px;
+  color: #667085;
+  font-size: 0.82rem;
+}
+
+.admin-trend-chart {
+  display: grid;
+  grid-template-columns: repeat(14, minmax(0, 1fr));
+  gap: 8px;
+  align-items: end;
+  min-height: 180px;
+}
+
+.admin-trend-day {
+  display: grid;
+  grid-template-rows: minmax(120px, 1fr) auto;
+  gap: 7px;
+  align-items: end;
+  min-width: 0;
+}
+
+.admin-trend-day span {
+  display: block;
+  min-height: 8px;
+  border-radius: 999px 999px 4px 4px;
+  background: linear-gradient(180deg, #a67c52, #111827);
+}
+
+.admin-trend-day small {
+  overflow: hidden;
+  color: #667085;
+  font-size: 0.62rem;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-funnel-list,
+.admin-ranked-list,
+.admin-mini-breakdown {
+  display: grid;
+  gap: 10px;
+}
+
+.admin-funnel-row,
+.admin-ranked-row,
+.admin-mini-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px 12px;
+  align-items: center;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: #18202a;
+  text-align: left;
+}
+
+button.admin-funnel-row,
+button.admin-ranked-row {
+  cursor: pointer;
+}
+
+button.admin-funnel-row:hover,
+button.admin-ranked-row:hover {
+  color: #8a5c2d;
+}
+
+.admin-funnel-row span,
+.admin-ranked-row strong,
+.admin-mini-row span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-funnel-row strong,
+.admin-mini-row strong {
+  color: #101820;
+}
+
+.admin-funnel-row em,
+.admin-ranked-row em,
+.admin-mini-row em {
+  grid-column: 1 / -1;
+  display: block;
+  overflow: hidden;
+  height: 7px;
+  border-radius: 999px;
+  background: #edf2f7;
+}
+
+.admin-funnel-row i,
+.admin-ranked-row i,
+.admin-mini-row i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #a67c52;
+}
+
+.admin-funnel-row--requested i {
+  background: #60a5fa;
+}
+
+.admin-funnel-row--no_response i {
+  background: #eab308;
+}
+
+.admin-funnel-row--quoted i {
+  background: #2563eb;
+}
+
+.admin-funnel-row--booked i {
+  background: #22c55e;
+}
+
+.admin-funnel-row--completed i {
+  background: #047857;
+}
+
+.admin-funnel-row--cancelled i {
+  background: #dc2626;
+}
+
+.admin-ranked-row {
+  grid-template-columns: 28px minmax(0, 1fr) auto;
+}
+
+.admin-ranked-row span {
+  display: inline-grid;
+  width: 24px;
+  height: 24px;
+  place-items: center;
+  border-radius: 999px;
+  background: #f3f4f6;
+  color: #667085;
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+.admin-ranked-row small {
+  color: #667085;
+  font-weight: 800;
+}
+
+.admin-panel-divider {
+  height: 1px;
+  background: #edf2f7;
+}
+
+.admin-mini-breakdown h5 {
+  color: #667085;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
 
 .admin-filter-banner {
   display: flex;
@@ -1503,6 +1764,21 @@ button.admin-metric {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+.admin-filters-panel .admin-archive-toggle {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  gap: 8px;
+  color: #475467;
+  text-transform: none;
+}
+
+.admin-archive-toggle input {
+  width: 16px;
+  height: 16px;
+  accent-color: #101828;
+}
+
 .admin-filters-panel label {
   display: grid;
   gap: 6px;
@@ -1552,6 +1828,30 @@ button.admin-metric {
   border-left: 4px solid #a67c52;
 }
 
+.admin-request-card.is-archived {
+  border-left-color: #64748b;
+  background: #f8fafc;
+}
+
+.admin-request-card.is-archived .admin-request-summary {
+  background: #f8fafc;
+  opacity: 0.84;
+}
+
+.admin-archived-pill {
+  display: inline-grid;
+  min-height: 28px;
+  place-items: center;
+  border: 1px solid #64748b;
+  border-radius: 999px;
+  color: #334155;
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  padding: 0 10px;
+  text-transform: uppercase;
+}
+
 .admin-request-card.is-expanded {
   border-color: #a67c52;
   box-shadow: 0 16px 36px rgba(15, 23, 42, 0.1);
@@ -1595,6 +1895,12 @@ button.admin-metric {
   background: transparent;
   font-size: 0.64rem;
   box-shadow: none;
+}
+
+.admin-summary-status-stack {
+  display: grid;
+  justify-items: end;
+  gap: 5px;
 }
 
 .admin-request-summary .admin-status--requested {
@@ -2190,6 +2496,30 @@ button.admin-metric {
   font-weight: 800;
 }
 
+.admin-settings-panel {
+  display: grid;
+  gap: 16px;
+}
+
+.admin-settings-note {
+  border: 1px solid #dbe5f1;
+  border-radius: 10px;
+  background: #f8fafc;
+  color: #475467;
+  padding: 12px;
+}
+
+.admin-settings-note strong,
+.admin-settings-note p {
+  margin: 0;
+}
+
+.admin-settings-note p {
+  margin-top: 4px;
+  font-size: 0.86rem;
+  line-height: 1.45;
+}
+
 .admin-readonly-pill {
   display: inline-flex;
   align-items: center;
@@ -2298,20 +2628,20 @@ button.admin-metric {
 
 @media (max-width: 720px) and (max-height: 760px) {
   .placement {
-    gap: 9px;
+    gap: 7px;
   }
 
   .placement-guide {
-    width: min(190px, 76vw);
-    margin-bottom: 4px;
+    width: min(138px, 48vw);
+    margin-bottom: 2px;
   }
 
   .placement-guide img {
-    max-height: 88px;
+    max-height: 54px;
   }
 
   .placement-image {
-    max-height: 36vh;
+    max-height: 34vh;
   }
 }
 
@@ -3401,6 +3731,8 @@ button.admin-metric {
   .admin-filters-panel,
   .admin-library-filters,
   .admin-user-row,
+  .admin-dashboard-hero,
+  .admin-dashboard-grid,
   .admin-body-grid,
   .admin-body-layout,
   .admin-request-summary,
@@ -3433,6 +3765,14 @@ button.admin-metric {
 
   .admin-status {
     justify-self: start;
+  }
+
+  .admin-trend-chart {
+    gap: 5px;
+  }
+
+  .admin-trend-day small {
+    font-size: 0.56rem;
   }
 }
 

@@ -1,5 +1,5 @@
 // wa.me expects the international phone number without "+" or spaces.
-export const WHATSAPP_PHONE = "972547505670";
+export const FALLBACK_WHATSAPP_PHONE = "972547505670";
 const WHATSAPP_BASE_URL = "https://wa.me";
 
 function optionLabel(t, value) {
@@ -29,8 +29,8 @@ export function buildWhatsappMessage(formData, t) {
 🕒 ${labels.contactTime}: ${listLabels(t, formData.contactTimes)}`;
 }
 
-export function buildWhatsappUrl(formData, t) {
-  const phone = WHATSAPP_PHONE.replace(/[^\d]/g, "");
+export function buildWhatsappUrl(formData, t, whatsappPhone = FALLBACK_WHATSAPP_PHONE) {
+  const phone = whatsappPhone.replace(/[^\d]/g, "") || FALLBACK_WHATSAPP_PHONE;
 
   return `${WHATSAPP_BASE_URL}/${phone}?text=${encodeURIComponent(
     buildWhatsappMessage(formData, t),

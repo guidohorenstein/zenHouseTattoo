@@ -23,16 +23,19 @@ const emptyFilters = {
 export function RequestsModule({
   activeFilter,
   detailLoading,
+  includeArchived,
   inquiries,
   noteText,
   selectedDetail,
   onAddNote,
+  onArchive,
   onDelete,
   onDiscard,
   onDrillUp,
   onNoteTextChange,
   onRequestDetail,
   onStatusChange,
+  onToggleArchived,
   permissions,
 }) {
   const [filters, setFilters] = useState(emptyFilters);
@@ -169,6 +172,15 @@ export function RequestsModule({
             </select>
           </label>
         </div>
+
+        <label className="admin-archive-toggle">
+          <input
+            checked={includeArchived}
+            type="checkbox"
+            onChange={(event) => onToggleArchived(event.target.checked)}
+          />
+          Show archived requests
+        </label>
       </div>
       {activeFilter ? (
         <div className="admin-filter-banner">
@@ -198,6 +210,7 @@ export function RequestsModule({
             key={inquiry.id}
             noteText={noteText}
             onAddNote={onAddNote}
+            onArchive={onArchive}
             onDelete={onDelete}
             onDiscard={onDiscard}
             onImagePreview={setPreviewImage}
@@ -223,6 +236,7 @@ function RequestCard({
   inquiry,
   noteText,
   onAddNote,
+  onArchive,
   onDelete,
   onDiscard,
   onImagePreview,
@@ -232,7 +246,9 @@ function RequestCard({
   onToggle,
 }) {
   return (
-    <article className={`admin-request-card ${expanded ? "is-expanded" : ""}`}>
+    <article className={`admin-request-card ${expanded ? "is-expanded" : ""} ${
+      inquiry.archived_at ? "is-archived" : ""
+    }`}>
       <button className="admin-request-summary" type="button" onClick={onToggle}>
         <div>
           <strong>{inquiry.full_name}</strong>
@@ -246,7 +262,10 @@ function RequestCard({
           <span>{formatList(inquiry.contact_times)}</span>
           <span>{formatValue(inquiry.timing)}</span>
         </div>
-        <StatusBadge status={inquiry.status} />
+        <span className="admin-summary-status-stack">
+          <StatusBadge status={inquiry.status} />
+          {inquiry.archived_at ? <span className="admin-archived-pill">Archived</span> : null}
+        </span>
       </button>
 
       {expanded ? (
@@ -254,10 +273,11 @@ function RequestCard({
           {detailLoading ? <p className="admin-muted-light">Loading full request...</p> : null}
           {detail?.inquiry ? (
             <RequestDetail
-              detail={detail}
-              noteText={noteText}
-              onAddNote={onAddNote}
-              onDelete={onDelete}
+            detail={detail}
+            noteText={noteText}
+            onAddNote={onAddNote}
+              onArchive={onArchive}
+            onDelete={onDelete}
               onDiscard={onDiscard}
               onImagePreview={onImagePreview}
               onNoteTextChange={onNoteTextChange}
@@ -275,6 +295,7 @@ function RequestDetail({
   detail,
   noteText,
   onAddNote,
+  onArchive,
   onDelete,
   onDiscard,
   onImagePreview,
@@ -331,6 +352,9 @@ function RequestDetail({
             ))}
           </div>
           <div className="admin-danger-actions">
+            <button disabled={!permissions?.canEditRequests} type="button" onClick={() => onArchive(inquiry)}>
+              {inquiry.archived_at ? "Restore request" : "Archive request"}
+            </button>
             <button disabled={!permissions?.canEditRequests} type="button" onClick={() => onDiscard(inquiry)}>Discard request</button>
             <button disabled={!permissions?.canEditRequests} type="button" onClick={() => onDelete(inquiry)}>Delete permanently</button>
           </div>

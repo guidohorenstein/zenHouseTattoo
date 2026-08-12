@@ -1,4 +1,5 @@
 import { hasSupabaseConfig, supabase } from "../../../lib/supabaseClient";
+import { normalizeFormSettings } from "../../admin/services/settingsApi";
 import { getAdminMediaUrl, isManagedMediaPath } from "../../admin/services/stylesApi";
 
 export async function listPublicTattooStyles() {
@@ -60,6 +61,21 @@ export async function listPublicMoreStylePreviews() {
       previewUrl: getAdminMediaUrl(preview.image_path),
     })),
     error: null,
+  };
+}
+
+export async function listPublicFormSettings() {
+  if (!hasSupabaseConfig) return { settings: normalizeFormSettings(), error: null };
+
+  const { data, error } = await supabase
+    .from("app_settings")
+    .select("value")
+    .eq("key", "form")
+    .maybeSingle();
+
+  return {
+    settings: normalizeFormSettings(data?.value),
+    error: error?.message || null,
   };
 }
 
