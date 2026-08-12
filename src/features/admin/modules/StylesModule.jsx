@@ -16,6 +16,10 @@ const emptyStyle = {
   title_he: "",
   placement_group: "main",
   sort_order: 0,
+  color_placement_group: "main",
+  color_sort_order: 0,
+  black_grey_placement_group: "main",
+  black_grey_sort_order: 0,
   color_image_path: "",
   black_grey_image_path: "",
   color_crop_data: {},
@@ -68,17 +72,24 @@ export function StylesModule({ canEdit = true }) {
   );
   const previewStyles = useMemo(
     () =>
-      sortedStyles.filter(
-        (style) =>
-          style.is_active &&
-          (previewMode === "blackGrey"
-            ? style.hasBlackGrey
-            : style.hasColor),
+      sortStylesForMode(
+        sortedStyles.filter(
+          (style) =>
+            style.is_active &&
+            (previewMode === "blackGrey"
+              ? style.hasBlackGrey
+              : style.hasColor),
+        ),
+        previewMode,
       ),
     [previewMode, sortedStyles],
   );
-  const mainStyles = previewStyles.filter((style) => style.placement_group === "main");
-  const moreStyles = previewStyles.filter((style) => style.placement_group === "more");
+  const mainStyles = previewStyles.filter(
+    (style) => getStyleGroup(style, previewMode) === "main",
+  );
+  const moreStyles = previewStyles.filter(
+    (style) => getStyleGroup(style, previewMode) === "more",
+  );
 
   useEffect(() => {
     loadStyles();
@@ -107,6 +118,8 @@ export function StylesModule({ canEdit = true }) {
     setDraft({
       ...emptyStyle,
       sort_order: (styles.length + 1) * 10,
+      color_sort_order: (styles.length + 1) * 10,
+      black_grey_sort_order: (styles.length + 1) * 10,
     });
     setColorFile(null);
     setBlackGreyFile(null);
@@ -315,13 +328,15 @@ export function StylesModule({ canEdit = true }) {
     const draggedStyle = styles.find((style) => style.id === draggedStyleId);
     if (!draggedStyle) return;
 
-    const groupStyles = sortStyles(
+    const groupStyles = sortStylesForMode(
       styles.filter(
         (style) =>
           style.is_active &&
           style.id !== draggedStyleId &&
-          style.placement_group === droppedGroup,
+          getStyleGroup(style, previewMode) === droppedGroup &&
+          (previewMode === "blackGrey" ? style.hasBlackGrey : style.hasColor),
       ),
+      previewMode,
     );
     const targetIndex = targetStyleId
       ? groupStyles.findIndex((style) => style.id === targetStyleId)
@@ -337,8 +352,7 @@ export function StylesModule({ canEdit = true }) {
     const updates = reorderedGroup.map((style, index) =>
       saveTattooStyle({
         ...style,
-        placement_group: droppedGroup,
-        sort_order: (index + 1) * 10,
+        ...getStyleModePatch(previewMode, droppedGroup, (index + 1) * 10),
       }),
     );
     const results = await Promise.all(updates);
@@ -636,24 +650,46 @@ function StyleEditor({
           />
         </label>
         <label>
-          Position
-          <input
-            min="0"
-            type="number"
-            value={draft.sort_order}
-            onChange={(event) => onUpdateDraft("sort_order", event.target.value)}
-            placeholder="Example: 10"
-          />
-        </label>
-        <label>
-          Display
+          Color display
           <select
-            value={draft.placement_group}
-            onChange={(event) => onUpdateDraft("placement_group", event.target.value)}
+            value={draft.color_placement_group}
+            onChange={(event) => onUpdateDraft("color_placement_group", event.target.value)}
           >
             <option value="main">Always visible</option>
             <option value="more">Show more</option>
           </select>
+        </label>
+        <label>
+          Color position
+          <input
+            min="0"
+            type="number"
+            value={draft.color_sort_order}
+            onChange={(event) => onUpdateDraft("color_sort_order", event.target.value)}
+            placeholder="Example: 10"
+          />
+        </label>
+        <label>
+          Black & grey display
+          <select
+            value={draft.black_grey_placement_group}
+            onChange={(event) =>
+              onUpdateDraft("black_grey_placement_group", event.target.value)
+            }
+          >
+            <option value="main">Always visible</option>
+            <option value="more">Show more</option>
+          </select>
+        </label>
+        <label>
+          Black & grey position
+          <input
+            min="0"
+            type="number"
+            value={draft.black_grey_sort_order}
+            onChange={(event) => onUpdateDraft("black_grey_sort_order", event.target.value)}
+            placeholder="Example: 10"
+          />
         </label>
         <label>
           Active
@@ -915,5 +951,46 @@ function sortStyles(styles) {
     }
 
     return a.sort_order - b.sort_order;
+  });
+}
+
+function getStyleGroup(style, mode) {
+  if (mode === "blackGrey") {
+    return style.black_grey_placement_group || style.placement_group || "main";
+  }
+
+  return style.color_placement_group || style.placement_group || "main";
+}
+
+function getStyleOrder(style, mode) {
+  if (mode === "blackGrey") {
+    return Number(style.black_grey_sort_order ?? style.sort_order) || 0;
+  }
+
+  return Number(style.color_sort_order ?? style.sort_order) || 0;
+}
+
+function getStyleModePatch(mode, group, sortOrder) {
+  if (mode === "blackGrey") {
+    return {
+      black_grey_placement_group: group,
+      black_grey_sort_order: sortOrder,
+    };
+  }
+
+  return {
+    color_placement_group: group,
+    color_sort_order: sortOrder,
+  };
+}
+
+function sortStylesForMode(styles, mode) {
+  return [...styles].sort((a, b) => {
+    const groupA = getStyleGroup(a, mode);
+    const groupB = getStyleGroup(b, mode);
+
+    if (groupA !== groupB) return groupA === "main" ? -1 : 1;
+
+    return getStyleOrder(a, mode) - getStyleOrder(b, mode);
   });
 }

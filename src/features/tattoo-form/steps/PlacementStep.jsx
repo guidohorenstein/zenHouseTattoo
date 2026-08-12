@@ -194,6 +194,15 @@ export function PlacementStep({ title, note, imageUrl, value, onChange, labels }
       <h1>{title}</h1>
       {note ? <p>{note}</p> : null}
 
+      <div className="placement-guide">
+        <img
+          src="/images/placement/placement-guide.gif"
+          alt=""
+          loading="lazy"
+          decoding="async"
+        />
+      </div>
+
       <div className="placement">
         <div className="placement-tools">
           <span className="placement-limit">

@@ -42,16 +42,10 @@ const initialFormData = {
   contactTimes: [],
 };
 
-const WHATSAPP_REDIRECT_DELAY_MS = 2200;
-
 function createSubmissionKey() {
   if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
 
   return `submission-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-}
-
-function wait(ms) {
-  return new Promise((resolve) => window.setTimeout(resolve, ms));
 }
 
 function preloadImage(url) {
@@ -116,6 +110,7 @@ function toRemoteStyleOptions(styles, language, colorMode) {
     .filter((style) =>
       colorMode === "blackGrey" ? style.hasBlackGrey : style.hasColor,
     )
+    .sort((a, b) => getStyleOrder(a, colorMode) - getStyleOrder(b, colorMode))
     .map((style) => ({
       id: style.slug,
       label: language === "he" ? style.title_he : style.title_en,
@@ -128,6 +123,22 @@ function toRemoteStyleOptions(styles, language, colorMode) {
           ? style.black_grey_crop_data
           : style.color_crop_data,
     }));
+}
+
+function getStyleGroup(style, colorMode) {
+  if (colorMode === "blackGrey") {
+    return style.black_grey_placement_group || style.placement_group || "main";
+  }
+
+  return style.color_placement_group || style.placement_group || "main";
+}
+
+function getStyleOrder(style, colorMode) {
+  if (colorMode === "blackGrey") {
+    return Number(style.black_grey_sort_order ?? style.sort_order) || 0;
+  }
+
+  return Number(style.color_sort_order ?? style.sort_order) || 0;
 }
 
 function toFallbackStyleOptions(styleIds, t, colorMode) {
@@ -247,9 +258,12 @@ export function TattooFormPage() {
           setHeTranslations(applyTextOverrides(translations.he, textsResult.he));
           setEnTranslations(applyTextOverrides(translations.en, textsResult.en));
 
-          const fallbackImageUrls = [
+          const criticalImageUrls = [
             "/images/backgrounds/background.webp",
             "/images/logo/topbar-logo-white.webp",
+          ];
+
+          const galleryImageUrls = [
             ...colorModes.map((colorModeId) => `/images/color-examples/${colorModeId}.jpeg`),
             ...tattooStyles.flatMap((styleId) => [
               `/images/tattoo-styles/thumbs/${styleId}.jpg`,
@@ -270,15 +284,18 @@ export function TattooFormPage() {
             ...stylesResult.styles.flatMap((s) => [s.colorPreviewUrl, s.blackGreyPreviewUrl]),
             ...bodyPhotosResult.images.map((i) => i.previewUrl),
             ...bodyPhotosResult.referenceImages.map((i) => i.previewUrl),
-            ...fallbackImageUrls,
+            ...galleryImageUrls,
           ].filter(Boolean);
 
-          Promise.all([...new Set(imageUrls)].map((url) => preloadImage(url))).catch(
-            () => {},
-          );
+          Promise.all(criticalImageUrls.map((url) => preloadImage(url))).catch(() => {});
+          Promise.all([...new Set(imageUrls)].map((url) => preloadImage(url))).catch(() => {});
         }
       } catch {
         // The local fallback form remains usable if remote content is unavailable.
+        await Promise.all([
+          preloadImage("/images/backgrounds/background.webp"),
+          preloadImage("/images/logo/topbar-logo-white.webp"),
+        ]);
       }
     }
 
@@ -357,21 +374,26 @@ export function TattooFormPage() {
               getSpecificZoneImageUrl(specificZoneId, formData.bodyReference),
           ),
       styles: remoteStyles.length
-        ? toRemoteStyleOptions(
-            remoteStyles.filter((style) => style.placement_group === "main"),
+          ? toRemoteStyleOptions(
+            remoteStyles.filter(
+              (style) => getStyleGroup(style, formData.colorMode) === "main",
+            ),
             language,
             formData.colorMode,
           )
         : toFallbackStyleOptions(tattooStyles, t, formData.colorMode),
       extraStyles: toRemoteStyleOptions(
-        remoteStyles.filter((style) => style.placement_group === "more"),
+        remoteStyles.filter(
+          (style) => getStyleGroup(style, formData.colorMode) === "more",
+        ),
         language,
         formData.colorMode,
       ),
       moreStylePreview: toRemoteStyleOptions(
         remoteStyles.filter(
           (style) =>
-            style.placement_group === "more" && style.is_more_styles_preview,
+            getStyleGroup(style, formData.colorMode) === "more" &&
+            style.is_more_styles_preview,
         ),
         language,
         formData.colorMode,
@@ -469,7 +491,6 @@ export function TattooFormPage() {
     if (submittedInquiryId) {
       submitLockRef.current = true;
       setIsSubmitting(true);
-      await wait(WHATSAPP_REDIRECT_DELAY_MS);
       window.location.assign(whatsappUrl);
       return;
     }
@@ -478,10 +499,7 @@ export function TattooFormPage() {
     setIsSubmitting(true);
 
     try {
-      const [result] = await Promise.all([
-        performSubmission(),
-        wait(WHATSAPP_REDIRECT_DELAY_MS),
-      ]);
+      const result = await performSubmission();
 
       if (result.error) {
         showToast(result.error);

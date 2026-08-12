@@ -10,8 +10,8 @@ export async function listTattooStylesAdmin() {
   const { data, error } = await supabase
     .from("tattoo_styles")
     .select("*")
-    .order("placement_group", { ascending: true })
-    .order("sort_order", { ascending: true })
+    .order("color_placement_group", { ascending: true })
+    .order("color_sort_order", { ascending: true })
     .order("title_en", { ascending: true });
 
   return {
@@ -31,6 +31,12 @@ export async function saveTattooStyle(style) {
     title_he: style.title_he.trim() || style.title_en.trim(),
     placement_group: style.placement_group,
     sort_order: Number(style.sort_order) || 0,
+    color_placement_group: style.color_placement_group || style.placement_group,
+    color_sort_order: Number(style.color_sort_order ?? style.sort_order) || 0,
+    black_grey_placement_group:
+      style.black_grey_placement_group || style.placement_group,
+    black_grey_sort_order:
+      Number(style.black_grey_sort_order ?? style.sort_order) || 0,
     color_image_path: style.color_image_path || null,
     black_grey_image_path: style.black_grey_image_path || null,
     color_crop_data: style.color_crop_data || {},
@@ -108,8 +114,21 @@ export function isManagedMediaPath(path) {
 }
 
 function withPreviewUrls(style) {
+  const colorPlacementGroup = style.color_placement_group || style.placement_group;
+  const blackGreyPlacementGroup =
+    style.black_grey_placement_group || style.placement_group;
+  const colorSortOrder = Number(style.color_sort_order ?? style.sort_order) || 0;
+  const blackGreySortOrder =
+    Number(style.black_grey_sort_order ?? style.sort_order) || 0;
+
   return {
     ...style,
+    color_placement_group: colorPlacementGroup,
+    color_sort_order: colorSortOrder,
+    black_grey_placement_group: blackGreyPlacementGroup,
+    black_grey_sort_order: blackGreySortOrder,
+    placement_group: style.placement_group || colorPlacementGroup,
+    sort_order: Number(style.sort_order ?? colorSortOrder) || 0,
     colorPreviewUrl: getAdminMediaUrl(style.color_image_path),
     blackGreyPreviewUrl: getAdminMediaUrl(style.black_grey_image_path),
     hasColor: isManagedMediaPath(style.color_image_path),

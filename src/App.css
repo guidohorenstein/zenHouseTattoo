@@ -742,6 +742,23 @@
   gap: 13px;
 }
 
+.placement-guide {
+  width: min(360px, 100%);
+  margin: -8px auto 16px;
+  overflow: hidden;
+  border: 1px solid var(--focus);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.placement-guide img {
+  display: block;
+  width: 100%;
+  max-height: 220px;
+  object-fit: cover;
+  object-position: center;
+}
+
 .placement-tools {
   display: flex;
   align-items: center;
@@ -1088,6 +1105,15 @@
 
   .placement-image {
     max-height: 46vh;
+  }
+
+  .placement-guide {
+    width: min(280px, 100%);
+    margin-bottom: 12px;
+  }
+
+  .placement-guide img {
+    max-height: 168px;
   }
 
   .navigation,
