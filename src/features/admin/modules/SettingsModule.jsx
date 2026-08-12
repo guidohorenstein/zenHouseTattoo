@@ -133,9 +133,11 @@ export function SettingsModule({ canEdit = true }) {
           </p>
         </div>
 
-        <button className="admin-primary-light" disabled={!canEdit || saving} type="submit">
-          {saving ? "Saving..." : "Save settings"}
-        </button>
+        <div className="admin-settings-actions">
+          <button className="admin-primary-light" disabled={!canEdit || saving} type="submit">
+            {saving ? "Saving..." : "Save settings"}
+          </button>
+        </div>
       </form>
     </section>
   );

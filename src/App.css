@@ -2498,7 +2498,23 @@ button.admin-ranked-row:hover {
 
 .admin-settings-panel {
   display: grid;
-  gap: 16px;
+  width: min(980px, 100%);
+  gap: 18px;
+  padding: 18px;
+}
+
+.admin-settings-panel .admin-section-heading {
+  padding-bottom: 12px;
+  border-bottom: 1px solid #edf2f7;
+}
+
+.admin-settings-panel .admin-form-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.admin-settings-panel .admin-form-grid label:first-child {
+  grid-column: 1 / -1;
 }
 
 .admin-settings-note {
@@ -2518,6 +2534,17 @@ button.admin-ranked-row:hover {
   margin-top: 4px;
   font-size: 0.86rem;
   line-height: 1.45;
+}
+
+.admin-settings-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 2px;
+}
+
+.admin-settings-actions .admin-primary-light {
+  width: fit-content;
+  min-width: 160px;
 }
 
 .admin-readonly-pill {
@@ -3788,7 +3815,8 @@ button.admin-ranked-row:hover {
   .admin-info-grid,
   .admin-filters-heading,
   .admin-filter-group,
-  .admin-filter-group--date {
+  .admin-filter-group--date,
+  .admin-settings-panel .admin-form-grid {
     display: grid;
     grid-template-columns: 1fr;
   }
@@ -3798,6 +3826,15 @@ button.admin-ranked-row:hover {
   }
 
   .admin-main .secondary-button {
+    width: 100%;
+  }
+
+  .admin-settings-panel {
+    padding: 14px;
+  }
+
+  .admin-settings-actions,
+  .admin-settings-actions .admin-primary-light {
     width: 100%;
   }
 
