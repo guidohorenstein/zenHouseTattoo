@@ -1,4 +1,5 @@
 export const statusLabels = {
+  partial: "Partial lead",
   requested: "Requested",
   no_response: "No response",
   quoted: "Quoted",
@@ -8,6 +9,7 @@ export const statusLabels = {
 };
 
 export const statusDescriptions = {
+  partial: "Contact details captured, but the form was not submitted.",
   requested: "New request that has not been handled yet.",
   no_response: "The client was contacted but did not answer.",
   quoted: "A price or estimate was sent to the client.",

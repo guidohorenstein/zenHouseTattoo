@@ -1,5 +1,6 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { TattooFormPage } from "./features/tattoo-form/TattooFormPage";
+import { initMetaPixel } from "./lib/metaPixel";
 import "./App.css";
 
 const AdminPage = lazy(() =>
@@ -10,6 +11,12 @@ const AdminPage = lazy(() =>
 
 function App() {
   const isAdminRoute = window.location.pathname.startsWith("/admin");
+
+  useEffect(() => {
+    if (!isAdminRoute) {
+      initMetaPixel();
+    }
+  }, [isAdminRoute]);
 
   if (isAdminRoute) {
     return (

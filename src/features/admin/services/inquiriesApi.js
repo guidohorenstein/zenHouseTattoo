@@ -25,22 +25,75 @@ const inquiryListSelect = [
   "archived_at",
 ].join(", ");
 
+const partialInquiryListSelect = [
+  "id",
+  "submission_key",
+  "full_name",
+  "email",
+  "phone",
+  "source_language",
+  "status",
+  "created_at",
+  "updated_at",
+  "archived_at",
+].join(", ");
+
+function toRequestRow(inquiry) {
+  return {
+    ...inquiry,
+    recordType: "inquiry",
+  };
+}
+
+function toPartialRequestRow(partial) {
+  return {
+    ...partial,
+    recordType: "partial",
+    status: "partial",
+    color_mode: "",
+    timing: "",
+    contact_times: [],
+    general_zone: "",
+    specific_zone: "",
+    styles: [],
+  };
+}
+
 export async function listInquiries({ includeArchived = false } = {}) {
   if (!hasSupabaseConfig) return { inquiries: [], error: "Supabase is not configured yet." };
 
-  let query = supabase
+  let inquiriesQuery = supabase
     .from("inquiries")
     .select(inquiryListSelect)
     .order("created_at", { ascending: false })
     .limit(100);
 
+  let partialsQuery = supabase
+    .from("partial_inquiries")
+    .select(partialInquiryListSelect)
+    .eq("status", "partial")
+    .order("created_at", { ascending: false })
+    .limit(100);
+
   if (!includeArchived) {
-    query = query.is("archived_at", null);
+    inquiriesQuery = inquiriesQuery.is("archived_at", null);
+    partialsQuery = partialsQuery.is("archived_at", null);
   }
 
-  const { data, error } = await query;
+  const [inquiriesResult, partialsResult] = await Promise.all([
+    inquiriesQuery,
+    partialsQuery,
+  ]);
 
-  return { inquiries: data || [], error: error?.message || null };
+  const inquiries = [
+    ...(inquiriesResult.data || []).map(toRequestRow),
+    ...(partialsResult.data || []).map(toPartialRequestRow),
+  ].sort((first, second) => new Date(second.created_at) - new Date(first.created_at));
+
+  return {
+    inquiries,
+    error: inquiriesResult.error?.message || partialsResult.error?.message || null,
+  };
 }
 
 export async function getInquiryDetail(inquiryId) {
@@ -139,6 +192,35 @@ export async function deleteInquiry(inquiryId) {
   if (!hasSupabaseConfig) return { error: "Supabase is not configured yet." };
 
   const { error } = await supabase.from("inquiries").delete().eq("id", inquiryId);
+  return { error: error?.message || null };
+}
+
+export async function archivePartialInquiry(partialId) {
+  if (!hasSupabaseConfig) return { error: "Supabase is not configured yet." };
+
+  const { error } = await supabase
+    .from("partial_inquiries")
+    .update({ archived_at: new Date().toISOString() })
+    .eq("id", partialId);
+
+  return { error: error?.message || null };
+}
+
+export async function restorePartialInquiry(partialId) {
+  if (!hasSupabaseConfig) return { error: "Supabase is not configured yet." };
+
+  const { error } = await supabase
+    .from("partial_inquiries")
+    .update({ archived_at: null })
+    .eq("id", partialId);
+
+  return { error: error?.message || null };
+}
+
+export async function deletePartialInquiry(partialId) {
+  if (!hasSupabaseConfig) return { error: "Supabase is not configured yet." };
+
+  const { error } = await supabase.from("partial_inquiries").delete().eq("id", partialId);
   return { error: error?.message || null };
 }
 

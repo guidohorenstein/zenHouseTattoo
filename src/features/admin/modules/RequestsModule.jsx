@@ -87,11 +87,11 @@ export function RequestsModule({
     onDrillUp();
   }
 
-  function toggleInquiry(inquiryId) {
-    const nextId = expandedId === inquiryId ? "" : inquiryId;
+  function toggleInquiry(inquiry) {
+    const nextId = expandedId === inquiry.id ? "" : inquiry.id;
     setExpandedId(nextId);
 
-    if (nextId) onRequestDetail(nextId);
+    if (nextId && inquiry.recordType !== "partial") onRequestDetail(nextId);
   }
 
   return (
@@ -121,6 +121,7 @@ export function RequestsModule({
             Status
             <select value={filters.status} onChange={(event) => updateFilter("status", event.target.value)}>
               <option value="all">All statuses</option>
+              <option value="partial">Partial leads</option>
               {inquiryStatuses.map((status) => (
                 <option key={status} value={status}>{statusLabels[status]}</option>
               ))}
@@ -217,7 +218,7 @@ export function RequestsModule({
             onNoteTextChange={onNoteTextChange}
             onStatusChange={onStatusChange}
             permissions={permissions}
-            onToggle={() => toggleInquiry(inquiry.id)}
+            onToggle={() => toggleInquiry(inquiry)}
           />
         ))}
       </div>
@@ -248,7 +249,7 @@ function RequestCard({
   return (
     <article className={`admin-request-card ${expanded ? "is-expanded" : ""} ${
       inquiry.archived_at ? "is-archived" : ""
-    }`}>
+    } ${inquiry.recordType === "partial" ? "is-partial" : ""}`}>
       <button className="admin-request-summary" type="button" onClick={onToggle}>
         <div>
           <strong>{inquiry.full_name}</strong>
@@ -259,8 +260,17 @@ function RequestCard({
           <span>{inquiry.phone}</span>
         </div>
         <div>
-          <span>{formatList(inquiry.contact_times)}</span>
-          <span>{formatValue(inquiry.timing)}</span>
+          {inquiry.recordType === "partial" ? (
+            <>
+              <span>Contact step only</span>
+              <span>Form not submitted</span>
+            </>
+          ) : (
+            <>
+              <span>{formatList(inquiry.contact_times)}</span>
+              <span>{formatValue(inquiry.timing)}</span>
+            </>
+          )}
         </div>
         <span className="admin-summary-status-stack">
           <StatusBadge status={inquiry.status} />
@@ -271,7 +281,14 @@ function RequestCard({
       {expanded ? (
         <div className="admin-request-expanded">
           {detailLoading ? <p className="admin-muted-light">Loading full request...</p> : null}
-          {detail?.inquiry ? (
+          {inquiry.recordType === "partial" ? (
+            <PartialRequestDetail
+              inquiry={inquiry}
+              onArchive={onArchive}
+              onDelete={onDelete}
+              permissions={permissions}
+            />
+          ) : detail?.inquiry ? (
             <RequestDetail
             detail={detail}
             noteText={noteText}
@@ -288,6 +305,39 @@ function RequestCard({
         </div>
       ) : null}
     </article>
+  );
+}
+
+function PartialRequestDetail({ inquiry, onArchive, onDelete, permissions }) {
+  return (
+    <div className="admin-partial-detail-grid">
+      <section className="admin-detail-section admin-partial-detail-card">
+        <h4>Partial lead</h4>
+        <p>
+          This person completed the contact step but did not finish the tattoo request.
+        </p>
+        <div className="admin-info-grid">
+          <DetailItem label="Name" value={inquiry.full_name} />
+          <DetailItem label="Email" value={inquiry.email} />
+          <DetailItem label="Phone" value={inquiry.phone} />
+          <DetailItem label="Language" value={inquiry.source_language?.toUpperCase()} />
+          <DetailItem label="Captured" value={formatDate(inquiry.created_at)} />
+          <DetailItem label="Last update" value={formatDate(inquiry.updated_at)} />
+        </div>
+      </section>
+
+      <section className="admin-detail-section admin-detail-section--compact admin-partial-actions">
+        <h4>Actions</h4>
+        <div className="admin-danger-actions">
+          <button disabled={!permissions?.canEditRequests} type="button" onClick={() => onArchive(inquiry)}>
+            {inquiry.archived_at ? "Restore partial lead" : "Archive partial lead"}
+          </button>
+          <button disabled={!permissions?.canEditRequests} type="button" onClick={() => onDelete(inquiry)}>
+            Delete permanently
+          </button>
+        </div>
+      </section>
+    </div>
   );
 }
 

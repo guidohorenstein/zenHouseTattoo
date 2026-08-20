@@ -363,6 +363,15 @@ Deno.serve(async (request) => {
     .maybeSingle();
 
   if (!alreadySubmittedError && alreadySubmittedInquiry) {
+    await supabase
+      .from("partial_inquiries")
+      .update({
+        status: "converted",
+        converted_inquiry_id: alreadySubmittedInquiry.id,
+        archived_at: new Date().toISOString(),
+      })
+      .eq("submission_key", payload.submission_key);
+
     return jsonResponse(request, { inquiry: alreadySubmittedInquiry, duplicate: true });
   }
 
@@ -399,6 +408,15 @@ Deno.serve(async (request) => {
       .single();
 
     if (!existingInquiryError && existingInquiry) {
+      await supabase
+        .from("partial_inquiries")
+        .update({
+          status: "converted",
+          converted_inquiry_id: existingInquiry.id,
+          archived_at: new Date().toISOString(),
+        })
+        .eq("submission_key", payload.submission_key);
+
       return jsonResponse(request, { inquiry: existingInquiry, duplicate: true });
     }
   }
@@ -476,6 +494,19 @@ Deno.serve(async (request) => {
       await rollbackInquiry(supabase, inquiry.id, uploadedPaths);
       return jsonResponse(request, { error: "Could not save reference images." }, 500);
     }
+  }
+
+  const { error: partialUpdateError } = await supabase
+    .from("partial_inquiries")
+    .update({
+      status: "converted",
+      converted_inquiry_id: inquiry.id,
+      archived_at: new Date().toISOString(),
+    })
+    .eq("submission_key", payload.submission_key);
+
+  if (partialUpdateError) {
+    console.warn("Partial inquiry conversion update failed:", partialUpdateError);
   }
 
   return jsonResponse(request, { inquiry });

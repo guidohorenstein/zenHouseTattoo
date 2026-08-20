@@ -6,11 +6,14 @@ import { getCurrentAdminSession, onAdminAuthChange, signInAdmin, signOutAdmin } 
 import {
   addInquiryNote,
   archiveInquiry,
+  archivePartialInquiry,
   deleteInquiry,
+  deletePartialInquiry,
   discardInquiry,
   getInquiryDetail,
   listDashboardMetrics,
   listInquiries,
+  restorePartialInquiry,
   restoreInquiry,
   updateInquiryStatus,
 } from "./services/inquiriesApi";
@@ -41,6 +44,8 @@ export function AdminPage() {
   const [noteText, setNoteText] = useState("");
 
   const loadInquiryDetail = useCallback(async (inquiryId) => {
+    if (!inquiryId) return;
+
     setDetailLoading(true);
     const result = await getInquiryDetail(inquiryId);
     setSelectedDetail(result);
@@ -153,7 +158,9 @@ export function AdminPage() {
     const confirmed = window.confirm(`Delete request from ${inquiry.full_name}? This cannot be undone.`);
     if (!confirmed) return;
 
-    const result = await deleteInquiry(inquiry.id);
+    const result = inquiry.recordType === "partial"
+      ? await deletePartialInquiry(inquiry.id)
+      : await deleteInquiry(inquiry.id);
 
     if (result.error) {
       setError(result.error);
@@ -170,9 +177,13 @@ export function AdminPage() {
       return;
     }
 
-    const result = inquiry.archived_at
-      ? await restoreInquiry(inquiry.id)
-      : await archiveInquiry(inquiry.id);
+    const result = inquiry.recordType === "partial"
+      ? inquiry.archived_at
+        ? await restorePartialInquiry(inquiry.id)
+        : await archivePartialInquiry(inquiry.id)
+      : inquiry.archived_at
+        ? await restoreInquiry(inquiry.id)
+        : await archiveInquiry(inquiry.id);
 
     if (result.error) {
       setError(result.error);

@@ -23,6 +23,7 @@ import { ContactStep } from "./steps/ContactStep";
 import { OptionsStep } from "./steps/OptionsStep";
 import { PlacementStep } from "./steps/PlacementStep";
 import { IdeaStep } from "./steps/IdeaStep";
+import { trackMetaEvent } from "../../lib/metaPixel";
 import { buildWhatsappUrl } from "./utils/buildWhatsappMessage";
 
 const defaultFormSettings = {
@@ -213,6 +214,8 @@ export function TattooFormPage() {
   const submitLockRef = useRef(false);
   const languageTouchedRef = useRef(false);
   const submissionKeyRef = useRef(createSubmissionKey());
+  const partialLeadSavingRef = useRef(false);
+  const partialLeadSignatureRef = useRef("");
   const toastTimerRef = useRef(null);
   const stepTransitionTimerRef = useRef(null);
   const [remoteStyles, setRemoteStyles] = useState([]);
@@ -437,6 +440,7 @@ export function TattooFormPage() {
     if (submittedInquiryId) {
       setSubmittedInquiryId("");
       submissionKeyRef.current = createSubmissionKey();
+      partialLeadSignatureRef.current = "";
     }
 
     setFormData((currentData) => {
@@ -466,7 +470,40 @@ export function TattooFormPage() {
   function goNext() {
     if (!canGoNext || isLastStep || transitionPhase !== "idle") return;
 
+    if (stepId === "name") {
+      saveContactLead();
+    }
+
     goToStep(currentStep + 1);
+  }
+
+  async function saveContactLead() {
+    const signature = [
+      submissionKeyRef.current,
+      formData.fullName.trim(),
+      formData.email.trim().toLowerCase(),
+      formData.phone.trim(),
+      language,
+    ].join("|");
+
+    if (partialLeadSavingRef.current || partialLeadSignatureRef.current === signature) {
+      return;
+    }
+
+    partialLeadSavingRef.current = true;
+
+    try {
+      const { savePartialInquiry } = await import("./services/savePartialInquiry");
+      const result = await savePartialInquiry(formData, language, submissionKeyRef.current);
+
+      if (!result.error) {
+        partialLeadSignatureRef.current = signature;
+      }
+    } catch (error) {
+      console.warn("Partial lead could not be saved:", error);
+    } finally {
+      partialLeadSavingRef.current = false;
+    }
   }
 
   function goBack() {
@@ -519,6 +556,13 @@ export function TattooFormPage() {
       if (result.error) {
         showToast(result.error);
         return;
+      }
+
+      if (!result.duplicate) {
+        trackMetaEvent("Lead", {
+          content_name: "Tattoo inquiry",
+          content_category: "Tattoo consultation",
+        });
       }
 
       setSubmittedInquiryId(result.inquiry?.id || submissionKeyRef.current);
