@@ -611,6 +611,7 @@ export function TattooFormPage() {
           phone={formData.phone}
           placeholders={stepText.placeholders}
           terms={t.terms}
+          direction={direction}
           acceptedTerms={formData.acceptedTerms}
           onFullNameChange={(value) => updateFormData("fullName", value)}
           onEmailChange={(value) => updateFormData("email", value)}

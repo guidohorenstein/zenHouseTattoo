@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { createPortal } from "react-dom";
 
 export function ContactStep({
   title,
@@ -8,6 +9,7 @@ export function ContactStep({
   phone,
   placeholders,
   terms,
+  direction = "ltr",
   acceptedTerms,
   onFullNameChange,
   onEmailChange,
@@ -15,6 +17,57 @@ export function ContactStep({
   onAcceptedTermsChange,
 }) {
   const [isTermsOpen, setIsTermsOpen] = useState(false);
+  const termsModal =
+    isTermsOpen && typeof document !== "undefined"
+      ? createPortal(
+          <div
+            className="terms-modal"
+            dir={direction}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="terms-title"
+          >
+            <div className="terms-modal-backdrop" onClick={() => setIsTermsOpen(false)} />
+            <section className="terms-modal-card">
+              <div className="terms-modal-header">
+                <h2 id="terms-title">{terms.title}</h2>
+                <button
+                  className="terms-modal-close"
+                  type="button"
+                  onClick={() => setIsTermsOpen(false)}
+                >
+                  {terms.close}
+                </button>
+              </div>
+              <div className="terms-modal-body">
+                {terms.body.split("\n").map((line, index) => (
+                  <p key={`${line.slice(0, 12)}-${index}`}>{line || "\u00A0"}</p>
+                ))}
+              </div>
+              <div className="terms-modal-footer">
+                <button
+                  className="terms-modal-secondary"
+                  type="button"
+                  onClick={() => setIsTermsOpen(false)}
+                >
+                  {terms.close}
+                </button>
+                <button
+                  className="terms-modal-accept"
+                  type="button"
+                  onClick={() => {
+                    onAcceptedTermsChange(true);
+                    setIsTermsOpen(false);
+                  }}
+                >
+                  {terms.accept}
+                </button>
+              </div>
+            </section>
+          </div>,
+          document.body,
+        )
+      : null;
 
   return (
     <div className="step">
@@ -66,24 +119,7 @@ export function ContactStep({
         </button>
       </div>
 
-      {isTermsOpen ? (
-        <div className="terms-modal" role="dialog" aria-modal="true" aria-labelledby="terms-title">
-          <div className="terms-modal-backdrop" onClick={() => setIsTermsOpen(false)} />
-          <section className="terms-modal-card">
-            <div className="terms-modal-header">
-              <h2 id="terms-title">{terms.title}</h2>
-              <button type="button" onClick={() => setIsTermsOpen(false)}>
-                {terms.close}
-              </button>
-            </div>
-            <div className="terms-modal-body">
-              {terms.body.split("\n").map((line, index) => (
-                <p key={`${line.slice(0, 12)}-${index}`}>{line || "\u00A0"}</p>
-              ))}
-            </div>
-          </section>
-        </div>
-      ) : null}
+      {termsModal}
     </div>
   );
 }

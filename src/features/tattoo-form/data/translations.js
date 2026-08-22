@@ -29,6 +29,7 @@ export const translations = {
       checkbox: "I agree to the Terms of Use, Privacy Policy and Accessibility Statement.",
       open: "Read terms",
       close: "Close",
+      accept: "Accept and close",
       title: "Terms of Use, Privacy Policy & Accessibility Statement – Zen House Tattoo",
       body: `1. Terms of Use & Limitation of Liability
 
@@ -199,6 +200,7 @@ export const translations = {
       checkbox: "אני מאשר/ת את התקנון, מדיניות הפרטיות והצהרת הנגישות.",
       open: "קריאת התקנון",
       close: "סגירה",
+      accept: "אישור וסגירה",
       title: "תקנון, מדיניות פרטיות והצהרת נגישות – Zen House Tattoo",
       body: `1. תנאי שימוש והגבלת אחריות
 
