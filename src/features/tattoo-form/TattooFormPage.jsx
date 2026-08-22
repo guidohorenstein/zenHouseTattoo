@@ -49,6 +49,7 @@ const initialFormData = {
   referenceImages: [],
   timing: "",
   contactTimes: [],
+  acceptedTerms: false,
 };
 
 function createSubmissionKey() {
@@ -86,7 +87,8 @@ function isStepValid(stepId, formData) {
     name:
       length(formData.fullName) >= 3 &&
       hasValidEmail &&
-      length(formData.phone) >= 8,
+      length(formData.phone) >= 8 &&
+      formData.acceptedTerms,
     description: hasIdeaText,
     bodyReference: Boolean(formData.bodyReference),
     hasTattoos: Boolean(formData.hasTattoos),
@@ -608,9 +610,12 @@ export function TattooFormPage() {
           email={formData.email}
           phone={formData.phone}
           placeholders={stepText.placeholders}
+          terms={t.terms}
+          acceptedTerms={formData.acceptedTerms}
           onFullNameChange={(value) => updateFormData("fullName", value)}
           onEmailChange={(value) => updateFormData("email", value)}
           onPhoneChange={updatePhone}
+          onAcceptedTermsChange={(value) => updateFormData("acceptedTerms", value)}
         />
       ),
       bodyReference: (
@@ -778,7 +783,7 @@ export function TattooFormPage() {
 
           <FormNavigation
             backLabel={t.back}
-            nextLabel={t.next}
+            nextLabel={stepId === "name" ? t.submitDetails : t.next}
             quoteLabel={t.quote}
             canGoBack={currentStep > 0}
             canGoNext={canGoNext}

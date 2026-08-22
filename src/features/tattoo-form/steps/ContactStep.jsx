@@ -1,3 +1,5 @@
+import { useState } from "react";
+
 export function ContactStep({
   title,
   note,
@@ -5,10 +7,15 @@ export function ContactStep({
   email,
   phone,
   placeholders,
+  terms,
+  acceptedTerms,
   onFullNameChange,
   onEmailChange,
   onPhoneChange,
+  onAcceptedTermsChange,
 }) {
+  const [isTermsOpen, setIsTermsOpen] = useState(false);
+
   return (
     <div className="step">
       <h1>{title}</h1>
@@ -43,6 +50,40 @@ export function ContactStep({
           onChange={(event) => onPhoneChange(event.target.value)}
         />
       </div>
+
+      <div className="terms-consent">
+        <label className="terms-checkbox">
+          <input
+            type="checkbox"
+            checked={acceptedTerms}
+            onChange={(event) => onAcceptedTermsChange(event.target.checked)}
+          />
+          <span className="terms-checkbox-box" aria-hidden="true" />
+          <span>{terms.checkbox} <strong aria-hidden="true">*</strong></span>
+        </label>
+        <button className="terms-link-button" type="button" onClick={() => setIsTermsOpen(true)}>
+          {terms.open}
+        </button>
+      </div>
+
+      {isTermsOpen ? (
+        <div className="terms-modal" role="dialog" aria-modal="true" aria-labelledby="terms-title">
+          <div className="terms-modal-backdrop" onClick={() => setIsTermsOpen(false)} />
+          <section className="terms-modal-card">
+            <div className="terms-modal-header">
+              <h2 id="terms-title">{terms.title}</h2>
+              <button type="button" onClick={() => setIsTermsOpen(false)}>
+                {terms.close}
+              </button>
+            </div>
+            <div className="terms-modal-body">
+              {terms.body.split("\n").map((line, index) => (
+                <p key={`${line.slice(0, 12)}-${index}`}>{line || "\u00A0"}</p>
+              ))}
+            </div>
+          </section>
+        </div>
+      ) : null}
     </div>
   );
 }

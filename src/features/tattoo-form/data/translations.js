@@ -11,6 +11,7 @@ export const translations = {
     of: "of",
     back: "Back",
     next: "Next",
+    submitDetails: "Submit details and continue",
     quote: "Send request",
     clearAll: "Clear marks",
     delete: "Delete",
@@ -24,6 +25,31 @@ export const translations = {
     showLessStyles: "Show less",
     otherStyleNeedsReference: "For Other style, please upload at least one reference image.",
     submitting: "Redirecting you to WhatsApp...",
+    terms: {
+      checkbox: "I agree to the Terms of Use, Privacy Policy and Accessibility Statement.",
+      open: "Read terms",
+      close: "Close",
+      title: "Terms of Use, Privacy Policy & Accessibility Statement – Zen House Tattoo",
+      body: `1. Terms of Use & Limitation of Liability
+
+- Non-Binding Estimate: The quote generator of Zen House Tattoo, owned by Diego Grinfeld (hereinafter: "Studio Management"), provides a preliminary, technical, and estimated quote only. This estimate does not constitute a binding offer under the Contracts Law (General Part), 1973. The final binding price is determined solely during an in-person consultation at the studio, based on actual design complexity, exact dimensions, skin placement, and required session time.
+- Full Disclaimer of Liability: Studio Management, its owners, or anyone on its behalf shall not be held liable for any direct, indirect, consequential, financial, or non-pecuniary damages resulting from the use of this system, reliance on generated estimates, technical disruptions, calculation errors, or system outages.
+- Age & Health Eligibility: Using this system does not grant authorization for receiving a tattoo. Tattooing is strictly subject to legal age compliance (under the Penal Law, 1977, Sec. 368H – ages 16 and above, or with parental consent) and the execution of a medical health declaration at the studio.
+- Intellectual Property: All copyrights, trademarks, proprietary designs, and content within this system belong exclusively to Diego Grinfeld / Zen House Tattoo.
+
+2. Privacy Policy & Marketing Consent
+
+- Data Collection: Entering personal details (name, tattoo description, contact details) is voluntary pursuant to the Protection of Privacy Law, 1981. Data is collected to calculate estimates, execute follow-ups, and maintain contact.
+- Explicit Consent for Direct Marketing: By clicking the submission button ("Submit details and continue"), the user explicitly grants prior written consent, pursuant to Section 30A of the Communications Law (Telecommunications and Broadcasting), 1982 ("Spam Law"), to receive promotional messages, updates, price offers, and reminders via email, SMS, WhatsApp, or phone calls.
+- Right to Opt-Out: Users may revoke consent and request removal from the distribution list at any time by clicking the "Unsubscribe" link included in commercial messages or by submitting a request via the website's contact form.
+- Data Confidentiality: User information will be stored securely in Studio Management databases and will not be transferred to third parties, except to technical service providers operating the system and distribution infrastructure on behalf of the studio.
+
+3. Accessibility Statement
+
+- Studio Management actively works to ensure its quote generator system is accessible to individuals with disabilities, in compliance with the Equal Rights for Persons with Disabilities Law, 1998, and the Equal Rights for Persons with Disabilities Regulations (Accessibility Adjustments for Service), 2013.
+- The system is adjusted to conform with Israeli Standard IS 5568 (Level AA), incorporating WCAG 2.1 international guidelines.
+- Should you encounter any accessibility barriers or require specific accommodations, please reach out via the website contact form for prompt resolution.`,
+    },
     steps: {
       name: {
         title: "Welcome",
@@ -117,7 +143,7 @@ export const translations = {
       night: "Night ☾",
     },
     errors: {
-      name: "Add your name, email and WhatsApp number.",
+      name: "Add your name, email, WhatsApp number and accept the terms.",
       description: "Write at least 20 characters.",
       style: "Choose a style.",
       color: "Choose a color option.",
@@ -155,6 +181,7 @@ export const translations = {
     of: "מתוך",
     back: "חזרה",
     next: "הבא",
+    submitDetails: "Submit details and continue",
     quote: "שליחת פנייה",
     clearAll: "ניקוי סימונים",
     delete: "מחיקה",
@@ -168,6 +195,31 @@ export const translations = {
     showLessStyles: "הצג פחות",
     otherStyleNeedsReference: "לסגנון אחר מומלץ לצרף לפחות תמונת השראה אחת.",
     submitting: "מעבירים אתכם לוואטסאפ...",
+    terms: {
+      checkbox: "אני מאשר/ת את התקנון, מדיניות הפרטיות והצהרת הנגישות.",
+      open: "קריאת התקנון",
+      close: "סגירה",
+      title: "תקנון, מדיניות פרטיות והצהרת נגישות – Zen House Tattoo",
+      body: `1. תנאי שימוש והגבלת אחריות
+
+- אומדן שאינו מחייב: מערכת הצעות המחיר של הסטודיו Zen House Tattoo בבעלות דיאגו גרינפלד (להלן: "הנהלת הסטודיו") מספקת הערכה ראשונית, טכנית ומשוערת בלבד. הצעת המחיר המתקבלת אינה מהווה הצעה מחייבת כמשמעה בחוק החוזים (חלק כללי), תשל"ג-1973. המחיר הסופי והמחייב נקבע אך ורק בפגישה פרונטלית בסטודיו לאחר בדיקת מורכבות העבודה, גודל מדויק, סוג העור וזמן העבודה בפועל.
+- פטור מוחלט מאחריות: הנהלת הסטודיו, בעליה או מי מטעמה לא ישאו בכל אחריות לכל נזק ישיר, עקיף, תוצאתי, כספי או עגמת נפש שיגרמו עקב שימוש במערכת, הסתמכות על הצעת המחיר, תקלות טכניות, שיבושים במערכת או טעויות חישוב.
+- כשרות ואישור רפואי: המערכת אינה מהווה אישור לביצוע קעקוע. ביצוע הקעקוע מותנה בעמידה בדרישות החוק לגיל מינימלי (בהתאם לכללי האתיקה וחוק העונשין, תשל"ז-1977, סעיף 368ח – מגיל 16 ומעלה או בליווי הורה) ובחתימה על הצהרת בריאות בסטודיו.
+- קניין רוחני: כל זכויות היוצרים, הסימנים המסחריים, העיצובים והתוכן במערכת שייכים בלעדית לדיאגו גרינפלד / Zen House Tattoo.
+
+2. מדיניות פרטיות ואישור דיוור
+
+- איסוף מידע: הזנת הפרטים במערכת (שם, תיאור הקעקוע ופרטי התקשרות) נעשית מרצון חופשי של המשתמש בהתאם לחוק הגנת הפרטיות, תשמ"א-1981. המידע משמש לצורך חישוב הצעת המחיר, מעקב ויצירת קשר.
+- הסכמה מפורשת לדיוור פרסומי: בלחיצה על כפתור השליחה/המשך, המשתמש נותן את הסכמתו המפורשת והמלאה בכתב, בהתאם לסעיף 30א לחוק התקשורת (בזק ושידורים), תשמ"ב-1982 ("חוק הספאם"), לקבלת מסרים פרסומיים, עדכונים, הצעות מחיר ותזכורות מהסטודיו באמצעות דוא"ל, מסרונים (SMS), הודעות WhatsApp או שיחות טלפון.
+- זכות הסרה: המשתמש רשאי לחזור בו מהסכמתו ולדרוש הסרה מרשימת התפוצה בכל עת באמצעות לחיצה על קישור ההסרה בגוף ההודעה או באמצעות פנייה דרך טופס צור הקשר באתר.
+- סודיות: המידע יישמר במאגרי הנהלת הסטודיו ולא יועבר לצדדים שלישיים, למעט לספקי שירות טכנולוגיים לצורך תפעול המערכת והדיוור בלבד.
+
+3. הצהרת נגישות
+
+- הנהלת הסטודיו פועלת להנגשת מערכת הצעות המחיר לאנשים עם מוגבלויות, בהתאם לחוק שוויון זכויות לאנשים עם מוגבלות, תשנ"ח-1998 ולתקנות שוויון זכויות לאנשים עם מוגבלות (התאמות נגישות לשירות), תשע"ג-2013.
+- המערכת הותאמה ככל הניתן לתקן הישראלי לנגישות תכנים באינטרנט (ת"י 5568) ברמה AA, המתבסס על הנחיות WCAG 2.1.
+- במידה ונתקלתם ברכיב שאינו נגיש או שנדרשת התאמה מיוחדת, ניתן לפנות להנהלת הסטודיו דרך טופס צור הקשר באתר, והפנייה תטופל בהקדם.`,
+    },
     steps: {
       name: {
         title: "ברוכים הבאים",
@@ -261,7 +313,7 @@ export const translations = {
       night: "☾ ערב",
     },
     errors: {
-      name: "יש למלא שם, אימייל ומספר WhatsApp.",
+      name: "יש למלא שם, אימייל, מספר טלפון ולאשר את התקנון.",
       description: "יש לכתוב לפחות 20 תווים.",
       style: "יש לבחור סגנון.",
       color: "יש לבחור צבע.",

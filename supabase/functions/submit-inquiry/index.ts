@@ -115,6 +115,68 @@ function cleanPlacementBoxes(value: unknown) {
   });
 }
 
+function normalizeTextForFingerprint(value: string) {
+  return value.trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+function normalizePhoneForFingerprint(value: string) {
+  return value.replace(/[^\d+]/g, "");
+}
+
+async function sha256(value: string) {
+  const bytes = new TextEncoder().encode(value);
+  const hash = await crypto.subtle.digest("SHA-256", bytes);
+
+  return Array.from(new Uint8Array(hash))
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+async function buildSubmissionFingerprint(
+  payload: ReturnType<typeof buildInquiryPayload>,
+) {
+  const source = {
+    email: normalizeTextForFingerprint(payload.email),
+    phone: normalizePhoneForFingerprint(payload.phone),
+    idea: normalizeTextForFingerprint(payload.idea_description),
+    bodyReference: payload.body_reference,
+    hasTattoos: payload.has_tattoos,
+    generalZone: payload.general_zone,
+    specificZone: payload.specific_zone,
+    colorMode: payload.color_mode,
+    styles: [...payload.styles].sort(),
+    timing: payload.timing,
+    contactTimes: [...payload.contact_times].sort(),
+    placementBoxes: payload.placement_boxes.map((box) => ({
+      x: box.x,
+      y: box.y,
+      width: box.width,
+      height: box.height,
+    })),
+  };
+
+  return sha256(JSON.stringify(source));
+}
+
+async function markPartialInquiryConverted(
+  supabase: ReturnType<typeof createClient>,
+  submissionKey: string,
+  inquiryId: string,
+) {
+  const { error } = await supabase
+    .from("partial_inquiries")
+    .update({
+      status: "converted",
+      converted_inquiry_id: inquiryId,
+      archived_at: new Date().toISOString(),
+    })
+    .eq("submission_key", submissionKey);
+
+  if (error) {
+    console.warn("Partial inquiry conversion update failed:", error);
+  }
+}
+
 function buildInquiryPayload(rawPayload: Record<string, unknown>) {
   const fullName = cleanText(rawPayload.full_name, MAX_TEXT.fullName);
   const email = cleanText(rawPayload.email, MAX_TEXT.email).toLowerCase();
@@ -355,6 +417,7 @@ Deno.serve(async (request) => {
   const supabase = createClient(supabaseUrl, serviceRoleKey, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
+  const submissionFingerprint = await buildSubmissionFingerprint(payload);
 
   const { data: alreadySubmittedInquiry, error: alreadySubmittedError } = await supabase
     .from("inquiries")
@@ -363,16 +426,29 @@ Deno.serve(async (request) => {
     .maybeSingle();
 
   if (!alreadySubmittedError && alreadySubmittedInquiry) {
-    await supabase
-      .from("partial_inquiries")
-      .update({
-        status: "converted",
-        converted_inquiry_id: alreadySubmittedInquiry.id,
-        archived_at: new Date().toISOString(),
-      })
-      .eq("submission_key", payload.submission_key);
+    await markPartialInquiryConverted(
+      supabase,
+      payload.submission_key,
+      alreadySubmittedInquiry.id,
+    );
 
     return jsonResponse(request, { inquiry: alreadySubmittedInquiry, duplicate: true });
+  }
+
+  const { data: duplicateInquiry, error: duplicateError } = await supabase
+    .from("inquiries")
+    .select("id")
+    .eq("submission_fingerprint", submissionFingerprint)
+    .maybeSingle();
+
+  if (!duplicateError && duplicateInquiry) {
+    await markPartialInquiryConverted(
+      supabase,
+      payload.submission_key,
+      duplicateInquiry.id,
+    );
+
+    return jsonResponse(request, { inquiry: duplicateInquiry, duplicate: true });
   }
 
   const rateLimit = await hasTooManyRecentInquiries(supabase, payload, getClientIp(request));
@@ -390,6 +466,7 @@ Deno.serve(async (request) => {
 
   const insertPayload = {
     ...payload,
+    submission_fingerprint: submissionFingerprint,
     client_ip: getClientIp(request),
     user_agent: cleanText(request.headers.get("user-agent"), 500),
   };
@@ -401,21 +478,28 @@ Deno.serve(async (request) => {
     .single();
 
   if (inquiryError?.code === "23505") {
-    const { data: existingInquiry, error: existingInquiryError } = await supabase
-      .from("inquiries")
-      .select("id")
-      .eq("submission_key", payload.submission_key)
-      .single();
+    const [existingByKeyResult, existingByFingerprintResult] = await Promise.all([
+      supabase
+        .from("inquiries")
+        .select("id")
+        .eq("submission_key", payload.submission_key)
+        .maybeSingle(),
+      supabase
+        .from("inquiries")
+        .select("id")
+        .eq("submission_fingerprint", submissionFingerprint)
+        .maybeSingle(),
+    ]);
 
-    if (!existingInquiryError && existingInquiry) {
-      await supabase
-        .from("partial_inquiries")
-        .update({
-          status: "converted",
-          converted_inquiry_id: existingInquiry.id,
-          archived_at: new Date().toISOString(),
-        })
-        .eq("submission_key", payload.submission_key);
+    const existingInquiry =
+      existingByKeyResult.data || existingByFingerprintResult.data;
+
+    if (existingInquiry) {
+      await markPartialInquiryConverted(
+        supabase,
+        payload.submission_key,
+        existingInquiry.id,
+      );
 
       return jsonResponse(request, { inquiry: existingInquiry, duplicate: true });
     }
@@ -496,18 +580,7 @@ Deno.serve(async (request) => {
     }
   }
 
-  const { error: partialUpdateError } = await supabase
-    .from("partial_inquiries")
-    .update({
-      status: "converted",
-      converted_inquiry_id: inquiry.id,
-      archived_at: new Date().toISOString(),
-    })
-    .eq("submission_key", payload.submission_key);
-
-  if (partialUpdateError) {
-    console.warn("Partial inquiry conversion update failed:", partialUpdateError);
-  }
+  await markPartialInquiryConverted(supabase, payload.submission_key, inquiry.id);
 
   return jsonResponse(request, { inquiry });
 });
