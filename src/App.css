@@ -2162,6 +2162,84 @@ button.admin-ranked-row:hover {
   background: #f5efff;
 }
 
+.admin-bulk-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border: 1px solid #dce3ee;
+  border-radius: 10px;
+  background: #ffffff;
+}
+
+.admin-select-visible {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  color: #18202a;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.admin-select-visible input,
+.admin-request-select input {
+  width: 17px;
+  height: 17px;
+  accent-color: #a67c52;
+}
+
+.admin-bulk-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.admin-bulk-actions select,
+.admin-bulk-actions button {
+  min-height: 34px;
+  border: 1px solid #d8dee7;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #18202a;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.76rem;
+  font-weight: 800;
+  padding: 0 11px;
+}
+
+.admin-bulk-actions button:hover:not(:disabled),
+.admin-bulk-actions select:hover:not(:disabled) {
+  border-color: #a67c52;
+}
+
+.admin-bulk-actions :disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.admin-bulk-actions .admin-bulk-danger {
+  border-color: #fecaca;
+  color: #b42318;
+}
+
+.admin-request-row {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  align-items: stretch;
+  background: #ffffff;
+}
+
+.admin-request-select {
+  display: grid;
+  place-items: center;
+  border-right: 1px solid #eef1f5;
+  background: #fbfcfd;
+}
+
 .admin-request-summary {
   width: 100%;
   display: grid;

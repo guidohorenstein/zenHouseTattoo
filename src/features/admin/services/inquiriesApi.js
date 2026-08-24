@@ -162,6 +162,36 @@ export async function updateInquiryStatus(inquiry, nextStatus, adminId) {
   return { error: eventError?.message || null };
 }
 
+export async function updateInquiriesStatus(inquiries, nextStatus, adminId) {
+  if (!hasSupabaseConfig) return { error: "Supabase is not configured yet." };
+
+  const editableInquiries = inquiries.filter(
+    (inquiry) => inquiry.recordType !== "partial" && inquiry.status !== nextStatus,
+  );
+  const ids = editableInquiries.map((inquiry) => inquiry.id);
+  if (ids.length === 0) return { error: null };
+
+  const { error: updateError } = await supabase
+    .from("inquiries")
+    .update({ status: nextStatus })
+    .in("id", ids);
+
+  if (updateError) return { error: updateError.message };
+
+  const statusEvents = editableInquiries.map((inquiry) => ({
+    inquiry_id: inquiry.id,
+    admin_id: adminId,
+    from_status: inquiry.status,
+    to_status: nextStatus,
+  }));
+
+  const { error: eventError } = await supabase
+    .from("inquiry_status_events")
+    .insert(statusEvents);
+
+  return { error: eventError?.message || null };
+}
+
 export async function discardInquiry(inquiry, adminId) {
   return updateInquiryStatus(inquiry, "cancelled", adminId);
 }
@@ -177,6 +207,18 @@ export async function archiveInquiry(inquiryId) {
   return { error: error?.message || null };
 }
 
+export async function archiveInquiries(inquiryIds) {
+  if (!hasSupabaseConfig) return { error: "Supabase is not configured yet." };
+  if (inquiryIds.length === 0) return { error: null };
+
+  const { error } = await supabase
+    .from("inquiries")
+    .update({ archived_at: new Date().toISOString() })
+    .in("id", inquiryIds);
+
+  return { error: error?.message || null };
+}
+
 export async function restoreInquiry(inquiryId) {
   if (!hasSupabaseConfig) return { error: "Supabase is not configured yet." };
 
@@ -188,10 +230,30 @@ export async function restoreInquiry(inquiryId) {
   return { error: error?.message || null };
 }
 
+export async function restoreInquiries(inquiryIds) {
+  if (!hasSupabaseConfig) return { error: "Supabase is not configured yet." };
+  if (inquiryIds.length === 0) return { error: null };
+
+  const { error } = await supabase
+    .from("inquiries")
+    .update({ archived_at: null })
+    .in("id", inquiryIds);
+
+  return { error: error?.message || null };
+}
+
 export async function deleteInquiry(inquiryId) {
   if (!hasSupabaseConfig) return { error: "Supabase is not configured yet." };
 
   const { error } = await supabase.from("inquiries").delete().eq("id", inquiryId);
+  return { error: error?.message || null };
+}
+
+export async function deleteInquiries(inquiryIds) {
+  if (!hasSupabaseConfig) return { error: "Supabase is not configured yet." };
+  if (inquiryIds.length === 0) return { error: null };
+
+  const { error } = await supabase.from("inquiries").delete().in("id", inquiryIds);
   return { error: error?.message || null };
 }
 
@@ -202,6 +264,18 @@ export async function archivePartialInquiry(partialId) {
     .from("partial_inquiries")
     .update({ archived_at: new Date().toISOString() })
     .eq("id", partialId);
+
+  return { error: error?.message || null };
+}
+
+export async function archivePartialInquiries(partialIds) {
+  if (!hasSupabaseConfig) return { error: "Supabase is not configured yet." };
+  if (partialIds.length === 0) return { error: null };
+
+  const { error } = await supabase
+    .from("partial_inquiries")
+    .update({ archived_at: new Date().toISOString() })
+    .in("id", partialIds);
 
   return { error: error?.message || null };
 }
@@ -217,10 +291,30 @@ export async function restorePartialInquiry(partialId) {
   return { error: error?.message || null };
 }
 
+export async function restorePartialInquiries(partialIds) {
+  if (!hasSupabaseConfig) return { error: "Supabase is not configured yet." };
+  if (partialIds.length === 0) return { error: null };
+
+  const { error } = await supabase
+    .from("partial_inquiries")
+    .update({ archived_at: null })
+    .in("id", partialIds);
+
+  return { error: error?.message || null };
+}
+
 export async function deletePartialInquiry(partialId) {
   if (!hasSupabaseConfig) return { error: "Supabase is not configured yet." };
 
   const { error } = await supabase.from("partial_inquiries").delete().eq("id", partialId);
+  return { error: error?.message || null };
+}
+
+export async function deletePartialInquiries(partialIds) {
+  if (!hasSupabaseConfig) return { error: "Supabase is not configured yet." };
+  if (partialIds.length === 0) return { error: null };
+
+  const { error } = await supabase.from("partial_inquiries").delete().in("id", partialIds);
   return { error: error?.message || null };
 }
 

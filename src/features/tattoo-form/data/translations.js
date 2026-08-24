@@ -11,7 +11,7 @@ export const translations = {
     of: "of",
     back: "Back",
     next: "Next",
-    submitDetails: "Submit details and continue",
+    submitDetails: "אישור פרטים והמשך בתהליך",
     quote: "Send request",
     clearAll: "Clear marks",
     delete: "Delete",

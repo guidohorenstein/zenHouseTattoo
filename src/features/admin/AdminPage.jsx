@@ -6,15 +6,22 @@ import { getCurrentAdminSession, onAdminAuthChange, signInAdmin, signOutAdmin } 
 import {
   addInquiryNote,
   archiveInquiry,
+  archiveInquiries,
   archivePartialInquiry,
+  archivePartialInquiries,
   deleteInquiry,
+  deleteInquiries,
   deletePartialInquiry,
+  deletePartialInquiries,
   discardInquiry,
   getInquiryDetail,
   listDashboardMetrics,
   listInquiries,
+  restoreInquiries,
   restorePartialInquiry,
+  restorePartialInquiries,
   restoreInquiry,
+  updateInquiriesStatus,
   updateInquiryStatus,
 } from "./services/inquiriesApi";
 import { DashboardModule } from "./modules/DashboardModule";
@@ -194,6 +201,86 @@ export function AdminPage() {
     await loadAdminData();
   }
 
+  async function handleBulkStatusChange(selectedInquiries, nextStatus) {
+    if (!permissions.canEditRequests) {
+      setError("Viewer users can only read requests.");
+      return { error: "Viewer users can only read requests." };
+    }
+
+    const fullInquiries = selectedInquiries.filter((inquiry) => inquiry.recordType !== "partial");
+    const result = await updateInquiriesStatus(fullInquiries, nextStatus, session.user.id);
+
+    if (result.error) {
+      setError(result.error);
+      return result;
+    }
+
+    setSelectedDetail(null);
+    await loadAdminData();
+    return { error: null };
+  }
+
+  async function handleBulkArchive(selectedInquiries, shouldArchive) {
+    if (!permissions.canEditRequests) {
+      setError("Viewer users can only read requests.");
+      return { error: "Viewer users can only read requests." };
+    }
+
+    const fullIds = selectedInquiries
+      .filter((inquiry) => inquiry.recordType !== "partial")
+      .map((inquiry) => inquiry.id);
+    const partialIds = selectedInquiries
+      .filter((inquiry) => inquiry.recordType === "partial")
+      .map((inquiry) => inquiry.id);
+
+    const [fullResult, partialResult] = shouldArchive
+      ? await Promise.all([archiveInquiries(fullIds), archivePartialInquiries(partialIds)])
+      : await Promise.all([restoreInquiries(fullIds), restorePartialInquiries(partialIds)]);
+    const error = fullResult.error || partialResult.error || null;
+
+    if (error) {
+      setError(error);
+      return { error };
+    }
+
+    setSelectedDetail(null);
+    await loadAdminData();
+    return { error: null };
+  }
+
+  async function handleBulkDelete(selectedInquiries) {
+    if (!permissions.canEditRequests) {
+      setError("Viewer users can only read requests.");
+      return { error: "Viewer users can only read requests." };
+    }
+
+    const confirmed = window.confirm(
+      `Delete ${selectedInquiries.length} selected request(s)? This cannot be undone.`,
+    );
+    if (!confirmed) return { cancelled: true };
+
+    const fullIds = selectedInquiries
+      .filter((inquiry) => inquiry.recordType !== "partial")
+      .map((inquiry) => inquiry.id);
+    const partialIds = selectedInquiries
+      .filter((inquiry) => inquiry.recordType === "partial")
+      .map((inquiry) => inquiry.id);
+    const [fullResult, partialResult] = await Promise.all([
+      deleteInquiries(fullIds),
+      deletePartialInquiries(partialIds),
+    ]);
+    const error = fullResult.error || partialResult.error || null;
+
+    if (error) {
+      setError(error);
+      return { error };
+    }
+
+    setSelectedDetail(null);
+    await loadAdminData();
+    return { error: null };
+  }
+
   async function handleAddNote(event, inquiryId) {
     event.preventDefault();
 
@@ -281,6 +368,9 @@ export function AdminPage() {
           onDelete={handleDelete}
           onDiscard={handleDiscard}
           onDrillUp={handleDrillUp}
+          onBulkArchive={handleBulkArchive}
+          onBulkDelete={handleBulkDelete}
+          onBulkStatusChange={handleBulkStatusChange}
           onNoteTextChange={setNoteText}
           onRequestDetail={loadInquiryDetail}
           onToggleArchived={setIncludeArchived}

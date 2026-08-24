@@ -29,6 +29,9 @@ export function RequestsModule({
   selectedDetail,
   onAddNote,
   onArchive,
+  onBulkArchive,
+  onBulkDelete,
+  onBulkStatusChange,
   onDelete,
   onDiscard,
   onDrillUp,
@@ -41,6 +44,7 @@ export function RequestsModule({
   const [filters, setFilters] = useState(emptyFilters);
   const [expandedId, setExpandedId] = useState("");
   const [previewImage, setPreviewImage] = useState(null);
+  const [selectedKeys, setSelectedKeys] = useState([]);
 
   const filteredInquiries = useMemo(() => {
     return inquiries.filter((inquiry) => {
@@ -85,6 +89,53 @@ export function RequestsModule({
   function clearFilters() {
     setFilters(emptyFilters);
     onDrillUp();
+  }
+
+  const selectedInquiries = useMemo(
+    () => inquiries.filter((inquiry) => selectedKeys.includes(getRequestKey(inquiry))),
+    [inquiries, selectedKeys],
+  );
+  const visibleKeys = filteredInquiries.map(getRequestKey);
+  const selectedVisibleCount = visibleKeys.filter((key) => selectedKeys.includes(key)).length;
+  const canSelectVisible = filteredInquiries.length > 0;
+  const hasSelectedFullRequests = selectedInquiries.some(
+    (inquiry) => inquiry.recordType !== "partial",
+  );
+
+  function toggleSelected(inquiry) {
+    const key = getRequestKey(inquiry);
+
+    setSelectedKeys((currentKeys) =>
+      currentKeys.includes(key)
+        ? currentKeys.filter((currentKey) => currentKey !== key)
+        : [...currentKeys, key],
+    );
+  }
+
+  function toggleVisibleSelection() {
+    if (selectedVisibleCount === visibleKeys.length) {
+      setSelectedKeys((currentKeys) =>
+        currentKeys.filter((key) => !visibleKeys.includes(key)),
+      );
+      return;
+    }
+
+    setSelectedKeys((currentKeys) =>
+      Array.from(new Set([...currentKeys, ...visibleKeys])),
+    );
+  }
+
+  function clearSelection() {
+    setSelectedKeys([]);
+  }
+
+  async function runBulkAction(action) {
+    if (selectedInquiries.length === 0) return;
+
+    const result = await action(selectedInquiries);
+    if (!result?.error && !result?.cancelled) {
+      clearSelection();
+    }
   }
 
   function toggleInquiry(inquiry) {
@@ -197,6 +248,66 @@ export function RequestsModule({
         </div>
       </div>
 
+      <div className="admin-bulk-toolbar">
+        <label className="admin-select-visible">
+          <input
+            checked={canSelectVisible && selectedVisibleCount === visibleKeys.length}
+            disabled={!canSelectVisible}
+            type="checkbox"
+            onChange={toggleVisibleSelection}
+          />
+          <span>
+            {selectedInquiries.length > 0
+              ? `${selectedInquiries.length} selected`
+              : "Select visible"}
+          </span>
+        </label>
+
+        {selectedInquiries.length > 0 ? (
+          <div className="admin-bulk-actions">
+            <select
+              disabled={!permissions?.canEditRequests || !hasSelectedFullRequests}
+              defaultValue=""
+              onChange={(event) => {
+                const nextStatus = event.target.value;
+                event.target.value = "";
+                if (nextStatus) {
+                  runBulkAction((selected) => onBulkStatusChange(selected, nextStatus));
+                }
+              }}
+            >
+              <option value="">Change status...</option>
+              {inquiryStatuses.map((status) => (
+                <option key={status} value={status}>{statusLabels[status]}</option>
+              ))}
+            </select>
+            <button
+              disabled={!permissions?.canEditRequests}
+              type="button"
+              onClick={() => runBulkAction((selected) => onBulkArchive(selected, true))}
+            >
+              Archive
+            </button>
+            <button
+              disabled={!permissions?.canEditRequests}
+              type="button"
+              onClick={() => runBulkAction((selected) => onBulkArchive(selected, false))}
+            >
+              Restore
+            </button>
+            <button
+              className="admin-bulk-danger"
+              disabled={!permissions?.canEditRequests}
+              type="button"
+              onClick={() => runBulkAction(onBulkDelete)}
+            >
+              Delete
+            </button>
+            <button type="button" onClick={clearSelection}>Clear</button>
+          </div>
+        ) : null}
+      </div>
+
       <div className="admin-request-list">
         {filteredInquiries.length === 0 ? (
           <section className="admin-white-panel"><p className="admin-muted-light">No requests match these filters.</p></section>
@@ -218,6 +329,8 @@ export function RequestsModule({
             onNoteTextChange={onNoteTextChange}
             onStatusChange={onStatusChange}
             permissions={permissions}
+            selected={selectedKeys.includes(getRequestKey(inquiry))}
+            onSelect={() => toggleSelected(inquiry)}
             onToggle={() => toggleInquiry(inquiry)}
           />
         ))}
@@ -244,13 +357,24 @@ function RequestCard({
   onNoteTextChange,
   onStatusChange,
   permissions,
+  selected,
+  onSelect,
   onToggle,
 }) {
   return (
     <article className={`admin-request-card ${expanded ? "is-expanded" : ""} ${
       inquiry.archived_at ? "is-archived" : ""
     } ${inquiry.recordType === "partial" ? "is-partial" : ""}`}>
-      <button className="admin-request-summary" type="button" onClick={onToggle}>
+      <div className="admin-request-row">
+        <label className="admin-request-select" onClick={(event) => event.stopPropagation()}>
+          <input
+            checked={selected}
+            type="checkbox"
+            onChange={onSelect}
+            aria-label={`Select ${inquiry.full_name}`}
+          />
+        </label>
+        <button className="admin-request-summary" type="button" onClick={onToggle}>
         <div>
           <strong>{inquiry.full_name}</strong>
           <span>{formatDate(inquiry.created_at)}</span>
@@ -276,7 +400,8 @@ function RequestCard({
           <StatusBadge status={inquiry.status} />
           {inquiry.archived_at ? <span className="admin-archived-pill">Archived</span> : null}
         </span>
-      </button>
+        </button>
+      </div>
 
       {expanded ? (
         <div className="admin-request-expanded">
@@ -565,6 +690,10 @@ function matchesActiveFilter(inquiry, activeFilter) {
   if (activeFilter.type === "style") return inquiry.styles?.includes(activeFilter.value);
   if (activeFilter.type === "generalZone") return inquiry.general_zone === activeFilter.value;
   return true;
+}
+
+function getRequestKey(inquiry) {
+  return `${inquiry.recordType || "inquiry"}:${inquiry.id}`;
 }
 
 
