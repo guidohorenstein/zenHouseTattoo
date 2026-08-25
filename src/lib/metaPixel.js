@@ -37,7 +37,6 @@ export function initMetaPixel() {
 
   installMetaPixelScript();
   window.fbq("init", metaPixelId);
-  window.fbq("track", "PageView");
   isMetaPixelReady = true;
 }
 

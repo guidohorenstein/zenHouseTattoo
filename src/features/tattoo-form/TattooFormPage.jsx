@@ -34,6 +34,20 @@ const defaultFormSettings = {
   maxPlacementBoxes: 3,
 };
 
+const STEP_PATHS = {
+  name: "/start",
+  description: "/idea",
+  color: "/color",
+  style: "/style",
+  bodyReference: "/body-reference",
+  generalZone: "/body-area",
+  specificZone: "/body-placement",
+  placement: "/tattoo-placement",
+  timing: "/timing",
+  contactTime: "/contact-time",
+  hasTattoos: "/laststep",
+};
+
 const initialFormData = {
   fullName: "",
   email: "",
@@ -218,6 +232,7 @@ export function TattooFormPage() {
   const submissionKeyRef = useRef(createSubmissionKey());
   const partialLeadSavingRef = useRef(false);
   const partialLeadSignatureRef = useRef("");
+  const lastTrackedStepPathRef = useRef("");
   const toastTimerRef = useRef(null);
   const stepTransitionTimerRef = useRef(null);
   const [remoteStyles, setRemoteStyles] = useState([]);
@@ -256,6 +271,25 @@ export function TattooFormPage() {
       window.clearTimeout(stepTransitionTimerRef.current);
     };
   }, []);
+
+  useEffect(() => {
+    const stepPath = STEP_PATHS[stepId] || "/";
+    const suffix = `${window.location.search}${window.location.hash}`;
+    const nextUrl = `${stepPath}${suffix}`;
+    const currentUrl = `${window.location.pathname}${suffix}`;
+
+    if (currentUrl !== nextUrl) {
+      window.history.pushState({ formStep: stepId }, "", nextUrl);
+    }
+
+    if (lastTrackedStepPathRef.current !== stepPath) {
+      trackMetaEvent("PageView", {
+        form_step: stepId,
+        form_step_path: stepPath,
+      });
+      lastTrackedStepPathRef.current = stepPath;
+    }
+  }, [currentStep, stepId]);
 
   useEffect(() => {
     let shouldIgnore = false;
@@ -443,6 +477,7 @@ export function TattooFormPage() {
       setSubmittedInquiryId("");
       submissionKeyRef.current = createSubmissionKey();
       partialLeadSignatureRef.current = "";
+      lastTrackedStepPathRef.current = "";
     }
 
     setFormData((currentData) => {
