@@ -23,14 +23,17 @@ export const translations = {
     minIdeaCharacters: "Minimum 20 characters",
     moreStyles: "More styles",
     showLessStyles: "Show less",
-    otherStyleNeedsReference: "For Other style, please upload at least one reference image.",
+    otherStyleNeedsReference:
+      "For Other style, please upload at least one reference image.",
     submitting: "Redirecting you to WhatsApp...",
     terms: {
-      checkbox: "I agree to the Terms of Use, Privacy Policy and Accessibility Statement.",
+      checkbox:
+        "I agree to the Terms of Use, Privacy Policy and Accessibility Statement.",
       open: "Read terms",
       close: "Close",
       accept: "Accept and close",
-      title: "Terms of Use, Privacy Policy & Accessibility Statement – Zen House Tattoo",
+      title:
+        "Terms of Use, Privacy Policy & Accessibility Statement – Zen House Tattoo",
       body: `1. Terms of Use & Limitation of Liability
 
 - Non-Binding Estimate: The quote generator of Zen House Tattoo, owned by Diego Grinfeld (hereinafter: "Studio Management"), provides a preliminary, technical, and estimated quote only. This estimate does not constitute a binding offer under the Contracts Law (General Part), 1973. The final binding price is determined solely during an in-person consultation at the studio, based on actual design complexity, exact dimensions, skin placement, and required session time.
