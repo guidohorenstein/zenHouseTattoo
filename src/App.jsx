@@ -20,7 +20,13 @@ function App() {
 
   if (isAdminRoute) {
     return (
-      <Suspense fallback={<main className="admin-page"><p className="admin-muted">Loading...</p></main>}>
+      <Suspense
+        fallback={
+          <main className="admin-page">
+            <p className="admin-muted">Loading...</p>
+          </main>
+        }
+      >
         <AdminPage />
       </Suspense>
     );
