@@ -12,12 +12,13 @@ export function IdeaStep({
   onReferenceImagesChange,
   labels,
   maxReferenceImages = 4,
+  minCharacters = 20,
   notice,
   onImageError,
 }) {
   const canAddImage = referenceImages.length < maxReferenceImages;
   const characterCount = value.length;
-  const hasEnoughCharacters = characterCount >= 20;
+  const hasEnoughCharacters = characterCount >= minCharacters;
 
   function handleFilesChange(event) {
     const selectedFiles = Array.from(event.target.files || []);

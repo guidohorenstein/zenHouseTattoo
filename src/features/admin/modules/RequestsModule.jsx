@@ -386,8 +386,8 @@ function RequestCard({
         <div>
           {inquiry.recordType === "partial" ? (
             <>
-              <span>Contact step only</span>
-              <span>Form not submitted</span>
+              <span>{formatList(inquiry.styles)}</span>
+              <span>Pending WhatsApp submit</span>
             </>
           ) : (
             <>
@@ -411,6 +411,7 @@ function RequestCard({
               inquiry={inquiry}
               onArchive={onArchive}
               onDelete={onDelete}
+              onImagePreview={onImagePreview}
               permissions={permissions}
             />
           ) : detail?.inquiry ? (
@@ -433,22 +434,36 @@ function RequestCard({
   );
 }
 
-function PartialRequestDetail({ inquiry, onArchive, onDelete, permissions }) {
+function PartialRequestDetail({ inquiry, onArchive, onDelete, onImagePreview, permissions }) {
   return (
     <div className="admin-partial-detail-grid">
       <section className="admin-detail-section admin-partial-detail-card">
-        <h4>Partial lead</h4>
+        <h4>Pending request</h4>
         <p>
-          This person completed the contact step but did not finish the tattoo request.
+          This person submitted their details but has not finished the WhatsApp request yet.
         </p>
         <div className="admin-info-grid">
           <DetailItem label="Name" value={inquiry.full_name} />
           <DetailItem label="Email" value={inquiry.email} />
           <DetailItem label="Phone" value={inquiry.phone} />
           <DetailItem label="Language" value={inquiry.source_language?.toUpperCase()} />
+          <DetailItem label="Color" value={formatValue(inquiry.color_mode)} />
+          <DetailItem label="Style" value={formatList(inquiry.styles)} />
+          <DetailItem label="Body" value={formatValue(inquiry.body_reference)} />
+          <DetailItem label="Area" value={formatValue(inquiry.general_zone)} />
+          <DetailItem label="View" value={formatValue(inquiry.specific_zone)} />
           <DetailItem label="Captured" value={formatDate(inquiry.created_at)} />
           <DetailItem label="Last update" value={formatDate(inquiry.updated_at)} />
         </div>
+      </section>
+
+      <section className="admin-detail-section admin-partial-detail-card">
+        <TextBlock title="Idea" text={inquiry.idea_description} />
+        <MediaPreviewStrip
+          images={inquiry.images}
+          inquiry={inquiry}
+          onImagePreview={onImagePreview}
+        />
       </section>
 
       <section className="admin-detail-section admin-detail-section--compact admin-partial-actions">

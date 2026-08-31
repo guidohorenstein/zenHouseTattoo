@@ -821,13 +821,16 @@
   border-radius: 10px;
 }
 
-.option-card__media {
+.option-card__media,
+.option-card__media.cropped-image {
   position: relative;
   z-index: 1;
   display: block;
   aspect-ratio: 3 / 4;
   overflow: hidden;
-  background: rgba(255, 255, 255, 0.04);
+  background:
+    linear-gradient(135deg, rgba(226, 174, 113, 0.12), rgba(255, 255, 255, 0.035)),
+    rgba(11, 10, 9, 0.72);
 }
 
 .option-card__media img {
@@ -971,7 +974,9 @@
   overflow: hidden;
   border: 1px solid var(--focus);
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.03);
+  background:
+    linear-gradient(135deg, rgba(226, 174, 113, 0.1), rgba(255, 255, 255, 0.03)),
+    rgba(11, 10, 9, 0.72);
 }
 
 .placement-guide img {
@@ -1003,7 +1008,9 @@
   margin: 0 auto;
   border: 1px solid var(--focus);
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.03);
+  background:
+    linear-gradient(135deg, rgba(226, 174, 113, 0.1), rgba(255, 255, 255, 0.03)),
+    rgba(11, 10, 9, 0.72);
   cursor: crosshair;
   user-select: none;
   touch-action: none;

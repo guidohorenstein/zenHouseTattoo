@@ -10,24 +10,51 @@ function toPartialInquiryPayload(formData, language, submissionKey) {
     email: formData.email,
     phone: formData.phone,
     source_language: language,
+    idea_description: formData.ideaDescription,
+    body_reference: formData.bodyReference,
+    general_zone: formData.generalZone,
+    specific_zone: formData.specificZone,
+    placement_boxes: formData.placementBoxes,
+    styles: formData.styles ? [formData.styles] : [],
+    color_mode: formData.colorMode,
     submission_key: submissionKey,
   };
 }
 
-export async function savePartialInquiry(formData, language, submissionKey) {
+export async function savePartialInquiry(
+  formData,
+  language,
+  submissionKey,
+  placementImage = null,
+) {
   if (!hasSupabaseConfig) {
     return { partial: null, error: null, skipped: true };
   }
 
   try {
+    const requestBody = new FormData();
+    requestBody.append(
+      "payload",
+      JSON.stringify(toPartialInquiryPayload(formData, language, submissionKey)),
+    );
+
+    if (placementImage) {
+      requestBody.append("placementImage", placementImage, placementImage.name);
+    }
+
+    formData.referenceImages.forEach((image) => {
+      if (image.file) {
+        requestBody.append("referenceImages", image.file, image.name);
+      }
+    });
+
     const response = await fetch(`${supabaseUrl}/functions/v1/save-partial-inquiry`, {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
         apikey: supabaseAnonKey,
         Authorization: `Bearer ${supabaseAnonKey}`,
       },
-      body: JSON.stringify(toPartialInquiryPayload(formData, language, submissionKey)),
+      body: requestBody,
     });
 
     const data = await response.json().catch(() => ({}));

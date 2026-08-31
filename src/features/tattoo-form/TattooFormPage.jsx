@@ -23,6 +23,7 @@ import { ContactStep } from "./steps/ContactStep";
 import { OptionsStep } from "./steps/OptionsStep";
 import { PlacementStep } from "./steps/PlacementStep";
 import { IdeaStep } from "./steps/IdeaStep";
+import { WelcomeStep } from "./steps/WelcomeStep";
 import { trackMetaEvent } from "../../lib/metaPixel";
 import { buildWhatsappUrl } from "./utils/buildWhatsappMessage";
 
@@ -35,18 +36,21 @@ const defaultFormSettings = {
 };
 
 const STEP_PATHS = {
-  name: "/start",
-  description: "/idea",
+  welcome: "/start",
   color: "/color",
   style: "/style",
   bodyReference: "/body-reference",
   generalZone: "/body-area",
   specificZone: "/body-placement",
   placement: "/tattoo-placement",
+  description: "/idea",
+  name: "/details",
   timing: "/timing",
   contactTime: "/contact-time",
   hasTattoos: "/laststep",
 };
+
+const MIN_IDEA_CHARACTERS = 15;
 
 const initialFormData = {
   fullName: "",
@@ -95,9 +99,10 @@ function isStepValid(stepId, formData) {
   const hasValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
     formData.email.trim(),
   );
-  const hasIdeaText = length(formData.ideaDescription) >= 20;
+  const hasIdeaText = length(formData.ideaDescription) >= MIN_IDEA_CHARACTERS;
 
   const validations = {
+    welcome: true,
     name:
       length(formData.fullName) >= 3 &&
       hasValidEmail &&
@@ -189,6 +194,10 @@ function toMoreStylePreviewOption(previews, colorMode, label) {
     imageUrl: preview.previewUrl,
     cropData: preview.crop_data,
   };
+}
+
+function collectOptionImageUrls(optionList = []) {
+  return optionList.map((option) => option.imageUrl).filter(Boolean);
 }
 
 function getRemoteBodyImage(bodyPhotos, { areaId, bodyReference, categoryId, imageRole }) {
@@ -472,6 +481,31 @@ export function TattooFormPage() {
     ],
   );
 
+  useEffect(() => {
+    const nextStepId = formSteps[currentStep + 1];
+    const urlsByStep = {
+      color: collectOptionImageUrls(options.colors),
+      style: [
+        ...collectOptionImageUrls(options.styles),
+        ...collectOptionImageUrls(options.extraStyles),
+        options.moreStylePreview?.imageUrl,
+      ].filter(Boolean),
+      bodyReference: collectOptionImageUrls(options.bodyReference),
+      generalZone: collectOptionImageUrls(options.generalZones),
+      specificZone: collectOptionImageUrls(options.specificZones),
+      placement: [placementImageUrl, "/images/placement/placement-guide.gif"].filter(Boolean),
+    };
+    const urls = [
+      ...(urlsByStep[stepId] || []),
+      ...(urlsByStep[nextStepId] || []),
+    ];
+
+    if (urls.length === 0) return;
+
+    const uniqueUrls = [...new Set(urls)];
+    Promise.all(uniqueUrls.map((url) => preloadImage(url))).catch(() => {});
+  }, [currentStep, options, placementImageUrl, stepId]);
+
   function updateFormData(field, value) {
     if (submittedInquiryId) {
       setSubmittedInquiryId("");
@@ -504,40 +538,74 @@ export function TattooFormPage() {
     }
   }
 
-  function goNext() {
+  async function goNext() {
     if (!canGoNext || isLastStep || transitionPhase !== "idle") return;
 
     if (stepId === "name") {
-      saveContactLead();
+      const savedPartialLead = await saveContactLead();
+      if (!savedPartialLead) return;
     }
 
     goToStep(currentStep + 1);
   }
 
   async function saveContactLead() {
-    const signature = [
-      submissionKeyRef.current,
-      formData.fullName.trim(),
-      formData.email.trim().toLowerCase(),
-      formData.phone.trim(),
+    const partialSnapshot = {
+      bodyReference: formData.bodyReference,
+      colorMode: formData.colorMode,
+      email: formData.email.trim().toLowerCase(),
+      fullName: formData.fullName.trim(),
+      generalZone: formData.generalZone,
+      ideaDescription: formData.ideaDescription.trim(),
       language,
+      phone: formData.phone.trim(),
+      placementBoxes: formData.placementBoxes,
+      referenceImages: formData.referenceImages.map((image) => ({
+        name: image.name,
+        size: image.size,
+      })),
+      specificZone: formData.specificZone,
+      styles: formData.styles,
+      submissionKey: submissionKeyRef.current,
+    };
+    const signature = [
+      partialSnapshot.submissionKey,
+      JSON.stringify(partialSnapshot),
     ].join("|");
 
     if (partialLeadSavingRef.current || partialLeadSignatureRef.current === signature) {
-      return;
+      return partialLeadSignatureRef.current === signature;
     }
 
     partialLeadSavingRef.current = true;
 
     try {
-      const { savePartialInquiry } = await import("./services/savePartialInquiry");
-      const result = await savePartialInquiry(formData, language, submissionKeyRef.current);
+      const [{ savePartialInquiry }, { exportMarkedPlacementImage }] = await Promise.all([
+        import("./services/savePartialInquiry"),
+        import("./utils/exportMarkedPlacementImage"),
+      ]);
+      const placementImage = await exportMarkedPlacementImage({
+        imageUrl: placementImageUrl,
+        boxes: formData.placementBoxes,
+      });
+      const result = await savePartialInquiry(
+        formData,
+        language,
+        submissionKeyRef.current,
+        placementImage,
+      );
 
       if (!result.error) {
         partialLeadSignatureRef.current = signature;
+        return true;
       }
+
+      showToast(result.error);
+      return false;
     } catch (error) {
       console.warn("Partial lead could not be saved:", error);
+      showToast("We could not save your details. Please try again.");
+      return false;
     } finally {
       partialLeadSavingRef.current = false;
     }
@@ -637,6 +705,7 @@ export function TattooFormPage() {
     const stepText = t.steps[stepId];
 
     const steps = {
+      welcome: <WelcomeStep title={stepText.title} />,
       name: (
         <ContactStep
           title={stepText.title}
@@ -735,6 +804,7 @@ export function TattooFormPage() {
           }
           labels={t}
           maxReferenceImages={formSettings.maxReferenceImages}
+          minCharacters={MIN_IDEA_CHARACTERS}
           notice={ideaNotice}
         />
       ),
@@ -819,7 +889,13 @@ export function TattooFormPage() {
 
           <FormNavigation
             backLabel={t.back}
-            nextLabel={stepId === "name" ? t.submitDetails : t.next}
+            nextLabel={
+              stepId === "welcome"
+                ? t.start
+                : stepId === "name"
+                  ? t.submitDetails
+                  : t.next
+            }
             quoteLabel={t.quote}
             canGoBack={currentStep > 0}
             canGoNext={canGoNext}

@@ -206,8 +206,9 @@ export function PlacementStep({
         <img
           src="/images/placement/placement-guide.gif"
           alt=""
-          loading="lazy"
           decoding="async"
+          fetchPriority="low"
+          loading="eager"
         />
       </div>
 
@@ -240,6 +241,8 @@ export function PlacementStep({
             alt=""
             draggable="false"
             decoding="async"
+            fetchPriority="high"
+            loading="eager"
           />
 
           {[...value, draftBox].filter(Boolean).map((box, index) => (

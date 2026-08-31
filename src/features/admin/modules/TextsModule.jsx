@@ -10,12 +10,55 @@ const PAGES = [
       "brand", "intro", "step", "of", "back", "next", "quote",
       "clearAll", "delete", "mark", "marksEmpty", "referenceImages",
       "maxReferenceImages", "maxPlacementBoxes", "minIdeaCharacters",
-      "submitting",
+      "start", "submitDetails", "submitting",
     ],
   },
   {
     id: "step-1",
-    label: "Step 1 — Contact",
+    label: "Step 1 — Welcome",
+    keys: ["steps.welcome.title"],
+  },
+  {
+    id: "step-2",
+    label: "Step 2 — Color",
+    keys: ["steps.color.title", "options.blackGrey", "options.color"],
+  },
+  {
+    id: "step-3",
+    label: "Step 3 — Style",
+    keys: ["steps.style.title", "moreStyles", "showLessStyles"],
+  },
+  {
+    id: "step-4",
+    label: "Step 4 — Body model",
+    keys: ["steps.bodyReference.title"],
+  },
+  {
+    id: "step-5",
+    label: "Step 5 — Body zone",
+    keys: ["steps.generalZone.title"],
+  },
+  {
+    id: "step-6",
+    label: "Step 6 — Specific zone",
+    keys: ["steps.specificZone.title"],
+  },
+  {
+    id: "step-7",
+    label: "Step 7 — Placement",
+    keys: ["steps.placement.title", "steps.placement.note"],
+  },
+  {
+    id: "step-8",
+    label: "Step 8 — Idea",
+    keys: [
+      "steps.description.title", "steps.description.ideaLabel",
+      "steps.description.uploadLabel", "steps.description.placeholder",
+    ],
+  },
+  {
+    id: "step-9",
+    label: "Step 9 — Contact",
     keys: [
       "steps.name.title", "steps.name.note",
       "steps.name.placeholders.fullName", "steps.name.placeholders.email",
@@ -23,62 +66,24 @@ const PAGES = [
     ],
   },
   {
-    id: "step-2",
-    label: "Step 2 — Idea",
-    keys: [
-      "steps.description.title", "steps.description.ideaLabel",
-      "steps.description.uploadLabel", "steps.description.placeholder",
-    ],
-  },
-  {
-    id: "step-3",
-    label: "Step 3 — Color",
-    keys: ["steps.color.title", "options.blackGrey", "options.color"],
-  },
-  {
-    id: "step-4",
-    label: "Step 4 — Style",
-    keys: ["steps.style.title", "moreStyles", "showLessStyles"],
-  },
-  {
-    id: "step-5",
-    label: "Step 5 — Body model",
-    keys: ["steps.bodyReference.title"],
-  },
-  {
-    id: "step-6",
-    label: "Step 6 — Body zone",
-    keys: ["steps.generalZone.title"],
-  },
-  {
-    id: "step-7",
-    label: "Step 7 — Specific zone",
-    keys: ["steps.specificZone.title"],
-  },
-  {
-    id: "step-8",
-    label: "Step 8 — Placement",
-    keys: ["steps.placement.title", "steps.placement.note"],
-  },
-  {
-    id: "step-9",
-    label: "Step 9 — Timing",
+    id: "step-10",
+    label: "Step 10 — Timing",
     keys: [
       "steps.timing.title",
       "options.now", "options.weeks", "options.month", "options.dontCare",
     ],
   },
   {
-    id: "step-10",
-    label: "Step 10 — Contact time",
+    id: "step-11",
+    label: "Step 11 — Contact time",
     keys: [
       "steps.contactTime.title", "steps.contactTime.note",
       "options.morning", "options.afternoon", "options.night",
     ],
   },
   {
-    id: "step-11",
-    label: "Step 11 — Has tattoos",
+    id: "step-12",
+    label: "Step 12 — Has tattoos",
     keys: [
       "steps.hasTattoos.title", "options.yes", "options.no",
     ],

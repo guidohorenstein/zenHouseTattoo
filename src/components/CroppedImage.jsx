@@ -7,6 +7,7 @@ export function CroppedImage({
   imageUrl,
   loading = "lazy",
   objectFit = "cover",
+  fetchPriority,
 }) {
   const crop = normalizeCrop(cropData);
 
@@ -16,6 +17,7 @@ export function CroppedImage({
         <img
           alt={alt}
           decoding="async"
+          fetchPriority={fetchPriority}
           loading={loading}
           src={imageUrl}
           style={{

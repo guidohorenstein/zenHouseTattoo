@@ -11,6 +11,7 @@ export const translations = {
     of: "of",
     back: "Back",
     next: "Next",
+    start: "Let's begin",
     submitDetails: "Submit details and continue",
     quote: "Send request",
     clearAll: "Clear marks",
@@ -20,7 +21,7 @@ export const translations = {
     referenceImages: "Reference images",
     maxReferenceImages: "Up to 4 images",
     maxPlacementBoxes: "Up to 3 marks",
-    minIdeaCharacters: "Minimum 20 characters",
+    minIdeaCharacters: "Minimum 15 characters",
     moreStyles: "More styles",
     showLessStyles: "Show less",
     otherStyleNeedsReference:
@@ -55,9 +56,12 @@ export const translations = {
 - Should you encounter any accessibility barriers or require specific accommodations, please reach out via the website contact form for prompt resolution.`,
     },
     steps: {
+      welcome: {
+        title: "Welcome - Are you ready to start pricing your next tattoo?",
+      },
       name: {
-        title: "Welcome",
-        note: "So we can send you a quote for the perfect tattoo, please fill in the details below.",
+        title: "Your details - so we can send your quote",
+        note: "",
         placeholders: {
           fullName: "Full name",
           email: "Email",
@@ -148,7 +152,7 @@ export const translations = {
     },
     errors: {
       name: "Add your name, email, WhatsApp number and accept the terms.",
-      description: "Write at least 20 characters.",
+      description: "Write at least 15 characters.",
       style: "Choose a style.",
       color: "Choose a color option.",
       bodyReference: "Choose a body reference.",
@@ -185,6 +189,7 @@ export const translations = {
     of: "מתוך",
     back: "חזרה",
     next: "הבא",
+    start: "כן, בוא נתחיל",
     submitDetails: "אישור פרטים והמשך בתהליך",
     quote: "שליחת פנייה",
     clearAll: "ניקוי סימונים",
@@ -194,7 +199,7 @@ export const translations = {
     referenceImages: "תמונות השראה",
     maxReferenceImages: "עד 4 תמונות",
     maxPlacementBoxes: "עד 3 סימונים",
-    minIdeaCharacters: "מינימום 20 תווים",
+    minIdeaCharacters: "מינימום 15 תווים",
     moreStyles: "עוד סגנונות",
     showLessStyles: "הצג פחות",
     otherStyleNeedsReference: "לסגנון אחר מומלץ לצרף לפחות תמונת השראה אחת.",
@@ -226,9 +231,12 @@ export const translations = {
 - במידה ונתקלתם ברכיב שאינו נגיש או שנדרשת התאמה מיוחדת, ניתן לפנות להנהלת הסטודיו דרך טופס צור הקשר באתר, והפנייה תטופל בהקדם.`,
     },
     steps: {
+      welcome: {
+        title: "כיף שאתם פה - שנתחיל את תמחור הקעקוע הבא שלכם?",
+      },
       name: {
-        title: "ברוכים הבאים",
-        note: "כדי שנוכל לשלוח לכם הצעת מחיר לקעקוע המושלם אנא מלאו את הפרטים הבאים",
+        title: "כדי שנוכל לשלוח לכם הצעה- הנה מלאו את הפרטים שלכם",
+        note: "",
         placeholders: {
           fullName: "שם מלא",
           email: "אימייל",
@@ -319,7 +327,7 @@ export const translations = {
     },
     errors: {
       name: "יש למלא שם, אימייל, מספר טלפון ולאשר את התקנון.",
-      description: "יש לכתוב לפחות 20 תווים.",
+      description: "יש לכתוב לפחות 15 תווים.",
       style: "יש לבחור סגנון.",
       color: "יש לבחור צבע.",
       bodyReference: "יש לבחור ייחוס גוף.",

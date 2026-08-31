@@ -32,10 +32,19 @@ const partialInquiryListSelect = [
   "email",
   "phone",
   "source_language",
+  "idea_description",
+  "body_reference",
+  "general_zone",
+  "specific_zone",
+  "placement_boxes",
+  "styles",
+  "color_mode",
+  "placement_marked_image_path",
   "status",
   "created_at",
   "updated_at",
   "archived_at",
+  "partial_inquiry_reference_images(id, storage_path, public_url, original_name, created_at)",
 ].join(", ");
 
 function toRequestRow(inquiry) {
@@ -50,12 +59,9 @@ function toPartialRequestRow(partial) {
     ...partial,
     recordType: "partial",
     status: "partial",
-    color_mode: "",
     timing: "",
     contact_times: [],
-    general_zone: "",
-    specific_zone: "",
-    styles: [],
+    images: partial.partial_inquiry_reference_images || [],
   };
 }
 
@@ -85,9 +91,22 @@ export async function listInquiries({ includeArchived = false } = {}) {
     partialsQuery,
   ]);
 
+  const partialRows = await Promise.all(
+    (partialsResult.data || []).map(async (partial) => {
+      const row = toPartialRequestRow(partial);
+      return {
+        ...row,
+        images: await withSignedImageUrls(row.images || []),
+        placementMarkedImageUrl: row.placement_marked_image_path
+          ? await getSignedStorageUrl(row.placement_marked_image_path)
+          : "",
+      };
+    }),
+  );
+
   const inquiries = [
     ...(inquiriesResult.data || []).map(toRequestRow),
-    ...(partialsResult.data || []).map(toPartialRequestRow),
+    ...partialRows,
   ].sort((first, second) => new Date(second.created_at) - new Date(first.created_at));
 
   return {
@@ -425,14 +444,18 @@ export async function listDashboardMetrics() {
 async function withSignedPlacementImageUrl(inquiry) {
   if (!inquiry.placement_marked_image_path) return inquiry;
 
-  const { data } = await supabase.storage
-    .from("inquiry-references")
-    .createSignedUrl(inquiry.placement_marked_image_path, 60 * 60);
-
   return {
     ...inquiry,
-    placementMarkedImageUrl: data?.signedUrl || "",
+    placementMarkedImageUrl: await getSignedStorageUrl(inquiry.placement_marked_image_path),
   };
+}
+
+async function getSignedStorageUrl(storagePath) {
+  const { data } = await supabase.storage
+    .from("inquiry-references")
+    .createSignedUrl(storagePath, 60 * 60);
+
+  return data?.signedUrl || "";
 }
 async function withSignedImageUrls(images) {
   return Promise.all(

@@ -83,7 +83,14 @@ export function OptionsStep({
         onClick={() => setShowMoreOptions(true)}
       >
         <span className="option-card__media">
-          <img src={previewOption.imageUrl} alt="" draggable="false" decoding="async" />
+          <img
+            src={previewOption.imageUrl}
+            alt=""
+            draggable="false"
+            decoding="async"
+            fetchPriority="high"
+            loading="eager"
+          />
           <span className="more-style-overlay" aria-hidden="true">+</span>
         </span>
         <span className="option-card__label">{moreLabel}</span>

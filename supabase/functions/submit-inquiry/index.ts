@@ -2,6 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const MAX_REFERENCE_IMAGES = 4;
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
+const MIN_IDEA_CHARACTERS = 15;
 const MAX_INQUIRIES_PER_CONTACT_PER_HOUR = 3;
 const MAX_INQUIRIES_PER_IP_PER_HOUR = 20;
 const MAX_TEXT = {
@@ -220,8 +221,8 @@ function validatePayload(payload: ReturnType<typeof buildInquiryPayload>) {
   if (payload.full_name.length < 3) return "Name is required.";
   if (!isValidEmail(payload.email)) return "A valid email is required.";
   if (!isValidPhone(payload.phone)) return "A valid phone is required.";
-  if (payload.idea_description.length < 20) {
-    return "Idea description must be at least 20 characters.";
+  if (payload.idea_description.length < MIN_IDEA_CHARACTERS) {
+    return `Idea description must be at least ${MIN_IDEA_CHARACTERS} characters.`;
   }
   if (!ALLOWED_COLOR_MODES.has(payload.color_mode)) return "Color mode is required.";
   if (payload.styles.length === 0) return "Choose at least one style.";

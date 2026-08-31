@@ -14,7 +14,9 @@ export function OptionCard({ cropData, label, selected, onClick, imageUrl }) {
         <CroppedImage
           className="option-card__media"
           cropData={cropData}
+          fetchPriority="high"
           imageUrl={imageUrl}
+          loading="eager"
         />
       ) : null}
       <span className="option-card__label">{label}</span>
