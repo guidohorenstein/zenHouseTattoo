@@ -33,14 +33,16 @@ export function FormNavigation({
 
   return (
     <div className="navigation">
-      <button
-        className="secondary-button"
-        type="button"
-        onClick={onBack}
-        disabled={!canGoBack || isSubmitting}
-      >
-        {backLabel}
-      </button>
+      {canGoBack ? (
+        <button
+          className="secondary-button"
+          type="button"
+          onClick={onBack}
+          disabled={isSubmitting}
+        >
+          {backLabel}
+        </button>
+      ) : null}
 
       {hideNext && !isLastStep ? null : (
         <button
