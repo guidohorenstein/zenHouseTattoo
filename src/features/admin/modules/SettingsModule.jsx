@@ -1,12 +1,18 @@
 import { useEffect, useState } from "react";
 import {
+  defaultLeadNotificationSettings,
   defaultFormSettings,
+  getLeadNotificationSettings,
   getFormSettings,
+  saveLeadNotificationSettings,
   saveFormSettings,
 } from "../services/settingsApi";
 
 export function SettingsModule({ canEdit = true }) {
   const [draft, setDraft] = useState(defaultFormSettings);
+  const [notificationDraft, setNotificationDraft] = useState(
+    defaultLeadNotificationSettings,
+  );
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
@@ -17,14 +23,48 @@ export function SettingsModule({ canEdit = true }) {
 
   async function loadSettings() {
     setLoading(true);
-    const result = await getFormSettings();
-    setDraft(result.settings);
-    setMessage(result.error || "");
+    const [formResult, notificationResult] = await Promise.all([
+      getFormSettings(),
+      getLeadNotificationSettings(),
+    ]);
+    setDraft(formResult.settings);
+    setNotificationDraft(notificationResult.settings);
+    setMessage(formResult.error || notificationResult.error || "");
     setLoading(false);
   }
 
   function updateDraft(field, value) {
     setDraft((currentDraft) => ({ ...currentDraft, [field]: value }));
+  }
+
+  function updateNotificationDraft(field, value) {
+    setNotificationDraft((currentDraft) => ({
+      ...currentDraft,
+      [field]: value,
+    }));
+  }
+
+  function updateRecipient(index, value) {
+    setNotificationDraft((currentDraft) => ({
+      ...currentDraft,
+      recipients: currentDraft.recipients.map((recipient, recipientIndex) =>
+        recipientIndex === index ? value : recipient,
+      ),
+    }));
+  }
+
+  function addRecipient() {
+    setNotificationDraft((currentDraft) => ({
+      ...currentDraft,
+      recipients: [...currentDraft.recipients, ""],
+    }));
+  }
+
+  function deleteRecipient(index) {
+    setNotificationDraft((currentDraft) => ({
+      ...currentDraft,
+      recipients: currentDraft.recipients.filter((_, recipientIndex) => recipientIndex !== index),
+    }));
   }
 
   async function handleSubmit(event) {
@@ -33,12 +73,16 @@ export function SettingsModule({ canEdit = true }) {
 
     setSaving(true);
     setMessage("");
-    const result = await saveFormSettings(draft);
+    const [formResult, notificationResult] = await Promise.all([
+      saveFormSettings(draft),
+      saveLeadNotificationSettings(notificationDraft),
+    ]);
 
-    if (result.error) {
-      setMessage(result.error);
+    if (formResult.error || notificationResult.error) {
+      setMessage(formResult.error || notificationResult.error);
     } else {
-      setDraft(result.settings);
+      setDraft(formResult.settings);
+      setNotificationDraft(notificationResult.settings);
       setMessage("Settings saved.");
     }
 
@@ -131,6 +175,91 @@ export function SettingsModule({ canEdit = true }) {
             Image and placement limits cannot exceed the backend safety limits:
             4 reference images and 3 placement marks.
           </p>
+        </div>
+
+        <div className="admin-settings-notifications">
+          <div className="admin-section-heading">
+            <div>
+              <h3>Lead notification emails</h3>
+              <p>
+                Send a delayed email when a lead becomes partial or complete.
+              </p>
+            </div>
+            <button
+              className="admin-light-button"
+              disabled={!canEdit}
+              type="button"
+              onClick={addRecipient}
+            >
+              Add email
+            </button>
+          </div>
+
+          <div className="admin-form-grid admin-notification-grid">
+            <label>
+              Notifications
+              <select
+                disabled={!canEdit}
+                value={notificationDraft.enabled ? "enabled" : "disabled"}
+                onChange={(event) =>
+                  updateNotificationDraft("enabled", event.target.value === "enabled")
+                }
+              >
+                <option value="enabled">Enabled</option>
+                <option value="disabled">Disabled</option>
+              </select>
+            </label>
+
+            <label>
+              Delay before email
+              <input
+                disabled={!canEdit}
+                max="120"
+                min="1"
+                type="number"
+                value={notificationDraft.delayMinutes}
+                onChange={(event) =>
+                  updateNotificationDraft("delayMinutes", event.target.value)
+                }
+              />
+            </label>
+          </div>
+
+          <div className="admin-notification-email-list">
+            {notificationDraft.recipients.length === 0 ? (
+              <p className="admin-muted-light">
+                No notification emails yet. Add one to start receiving lead alerts.
+              </p>
+            ) : null}
+
+            {notificationDraft.recipients.map((recipient, index) => (
+              <div className="admin-notification-email-row" key={index}>
+                <input
+                  disabled={!canEdit}
+                  placeholder="name@example.com"
+                  type="email"
+                  value={recipient}
+                  onChange={(event) => updateRecipient(index, event.target.value)}
+                />
+                <button
+                  className="admin-light-button"
+                  disabled={!canEdit}
+                  type="button"
+                  onClick={() => deleteRecipient(index)}
+                >
+                  Delete email
+                </button>
+              </div>
+            ))}
+          </div>
+
+          <div className="admin-settings-note">
+            <strong>Delivery guardrails</strong>
+            <p>
+              Emails are sent from the backend with lead metadata after the delay,
+              so quick completions are reported as complete instead of partial.
+            </p>
+          </div>
         </div>
 
         <div className="admin-settings-actions">

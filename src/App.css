@@ -2956,6 +2956,54 @@ button.admin-ranked-row:hover {
   line-height: 1.45;
 }
 
+.admin-settings-notifications {
+  display: grid;
+  gap: 14px;
+  padding-top: 18px;
+  border-top: 1px solid #edf2f7;
+}
+
+.admin-settings-notifications .admin-section-heading {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.admin-settings-panel .admin-notification-grid {
+  grid-template-columns: repeat(2, minmax(220px, 1fr));
+}
+
+.admin-notification-email-list {
+  display: grid;
+  gap: 10px;
+}
+
+.admin-notification-email-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+}
+
+.admin-notification-email-row input {
+  min-height: 40px;
+  width: 100%;
+  border: 1px solid #d6deea;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #101820;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 700;
+  outline: none;
+  padding: 0 11px;
+}
+
+.admin-notification-email-row input:focus {
+  border-color: #a67c52;
+  box-shadow: 0 0 0 3px rgba(166, 124, 82, 0.12);
+}
+
 .admin-settings-actions {
   display: flex;
   justify-content: flex-end;
