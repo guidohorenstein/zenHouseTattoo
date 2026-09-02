@@ -340,7 +340,14 @@ async function sendPartialLeadNotification(
   partial: { id: string; created_at?: string; updated_at?: string },
 ) {
   const settings = await getLeadNotificationSettings(supabase);
-  if (!settings.enabled || settings.recipients.length === 0) return "";
+
+  // No hay nada que enviar todavia. Se marca como omitido, no como enviado:
+  // darlo por enviado dejaria el lead notificado para siempre y no volveria a
+  // intentarse ni siquiera cuando se carguen destinatarios en el panel.
+  if (!settings.enabled) return "skipped:Lead notifications are disabled.";
+  if (settings.recipients.length === 0) {
+    return "skipped:No notification recipients configured in the admin panel.";
+  }
 
   const resendApiKey = Deno.env.get("RESEND_API_KEY");
   if (!resendApiKey) return "Missing RESEND_API_KEY.";
@@ -694,7 +701,9 @@ Deno.serve(async (request) => {
     const emailError = await sendPartialLeadNotification(supabase, payload, partial);
     await markPartialNotificationResult(supabase, partial.id, emailError);
 
-    if (emailError) {
+    if (emailError.startsWith("skipped:")) {
+      console.warn(`Partial lead notification skipped for ${partial.id}:`, emailError.slice(8));
+    } else if (emailError) {
       console.error(`Partial lead notification failed for ${partial.id}:`, emailError);
     }
   }
