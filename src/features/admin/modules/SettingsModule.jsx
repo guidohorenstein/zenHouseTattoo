@@ -182,7 +182,7 @@ export function SettingsModule({ canEdit = true }) {
             <div>
               <h3>Lead notification emails</h3>
               <p>
-                Send a delayed email when a lead becomes partial or complete.
+                Send an email as soon as a partial lead is saved.
               </p>
             </div>
             <button
@@ -208,20 +208,6 @@ export function SettingsModule({ canEdit = true }) {
                 <option value="enabled">Enabled</option>
                 <option value="disabled">Disabled</option>
               </select>
-            </label>
-
-            <label>
-              Delay before email
-              <input
-                disabled={!canEdit}
-                max="120"
-                min="1"
-                type="number"
-                value={notificationDraft.delayMinutes}
-                onChange={(event) =>
-                  updateNotificationDraft("delayMinutes", event.target.value)
-                }
-              />
             </label>
           </div>
 
@@ -256,8 +242,7 @@ export function SettingsModule({ canEdit = true }) {
           <div className="admin-settings-note">
             <strong>Delivery guardrails</strong>
             <p>
-              Emails are sent from the backend with lead metadata after the delay,
-              so quick completions are reported as complete instead of partial.
+              Emails are sent from the backend as soon as contact details create a partial lead. Duplicate saves for the same lead do not send another email.
             </p>
           </div>
         </div>

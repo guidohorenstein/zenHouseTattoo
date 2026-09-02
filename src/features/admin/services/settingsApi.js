@@ -11,7 +11,6 @@ export const defaultFormSettings = {
 export const defaultLeadNotificationSettings = {
   enabled: true,
   recipients: [],
-  delayMinutes: 10,
 };
 
 export async function getFormSettings() {
@@ -101,7 +100,6 @@ export function normalizeLeadNotificationSettings(settings = {}) {
   return {
     enabled: settings.enabled !== false,
     recipients: normalizeEmails(settings.recipients),
-    delayMinutes: clampNumber(settings.delayMinutes, 1, 120, 10),
   };
 }
 

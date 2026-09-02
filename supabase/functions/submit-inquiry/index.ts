@@ -337,28 +337,6 @@ function validateImage(file: File, label: string) {
   return "";
 }
 
-function getNotificationDueAt(delayMinutes: number) {
-  return new Date(Date.now() + delayMinutes * 60 * 1000).toISOString();
-}
-
-async function getLeadNotificationDelayMinutes(
-  supabase: ReturnType<typeof createClient>,
-) {
-  const { data, error } = await supabase
-    .from("app_settings")
-    .select("value")
-    .eq("key", "lead_notifications")
-    .maybeSingle();
-
-  if (error) {
-    console.warn("Could not read lead notification settings:", error);
-  }
-
-  const delay = Number((data?.value as Record<string, unknown> | undefined)?.delayMinutes);
-  if (!Number.isFinite(delay)) return 10;
-
-  return Math.min(120, Math.max(1, Math.round(delay)));
-}
 
 Deno.serve(async (request) => {
   const allowedOrigin = getAllowedOrigin(request);
@@ -441,7 +419,6 @@ Deno.serve(async (request) => {
   const supabase = createClient(supabaseUrl, serviceRoleKey, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
-  const notificationDelayMinutes = await getLeadNotificationDelayMinutes(supabase);
   const submissionFingerprint = await buildSubmissionFingerprint(payload);
 
   const { data: alreadySubmittedInquiry, error: alreadySubmittedError } = await supabase
@@ -492,8 +469,8 @@ Deno.serve(async (request) => {
   const insertPayload = {
     ...payload,
     submission_fingerprint: submissionFingerprint,
-    notification_due_at: getNotificationDueAt(notificationDelayMinutes),
-    notification_sent_at: null,
+    notification_due_at: null,
+    notification_sent_at: new Date().toISOString(),
     notification_error: null,
     client_ip: getClientIp(request),
     user_agent: cleanText(request.headers.get("user-agent"), 500),

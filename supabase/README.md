@@ -55,28 +55,21 @@ Deploy it with:
 supabase functions deploy submit-inquiry --project-ref rjhdbfvljpxxvpssyttu
 ```
 
-Lead notifications use a delayed processor so partial leads can become complete before an email is sent. Deploy all public lead functions after notification changes:
+Lead notifications are sent immediately when `save-partial-inquiry` creates the partial lead checkpoint. Deploy both public lead functions after notification changes:
 
 ```bash
 supabase functions deploy save-partial-inquiry --project-ref rjhdbfvljpxxvpssyttu
 supabase functions deploy submit-inquiry --project-ref rjhdbfvljpxxvpssyttu
-supabase functions deploy process-lead-notifications --project-ref rjhdbfvljpxxvpssyttu
 ```
 
-Configure notification secrets in Supabase before running the processor:
+Configure notification secrets in Supabase before testing partial lead notifications:
 
 ```bash
 supabase secrets set RESEND_API_KEY=your-resend-api-key --project-ref rjhdbfvljpxxvpssyttu
 supabase secrets set LEAD_NOTIFICATION_FROM="Zen House Tattoo <notifications@zenhousetattoo.com>" --project-ref rjhdbfvljpxxvpssyttu
-supabase secrets set LEAD_NOTIFICATION_SECRET=your-long-random-secret --project-ref rjhdbfvljpxxvpssyttu
 supabase secrets set PUBLIC_SITE_URL=https://zenhousetattoo.com --project-ref rjhdbfvljpxxvpssyttu
 ```
 
-Schedule `process-lead-notifications` to run every few minutes from Supabase scheduled functions, cron, or another trusted scheduler. The request must include the secret header:
-
-```txt
-x-lead-notification-secret: your-long-random-secret
-```
 
 The `service_role` key must stay only in Supabase secrets. Never put it in frontend code, `.env.local`, GitHub, or Cloudflare Pages variables.
 

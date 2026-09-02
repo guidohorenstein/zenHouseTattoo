@@ -20,6 +20,7 @@ const MAX_TEXT = {
 const ALLOWED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 const ALLOWED_BODY_REFERENCES = new Set(["male", "female", ""]);
 const ALLOWED_COLOR_MODES = new Set(["blackGrey", "color", ""]);
+const DEFAULT_NOTIFICATION_FROM = "Zen House Tattoo <notifications@zenhousetattoo.com>";
 
 function getAllowedOrigin(request: Request) {
   const origin = request.headers.get("origin") || "";
@@ -192,11 +193,40 @@ function validateImage(file: File, label: string) {
   return "";
 }
 
-function getNotificationDueAt(delayMinutes: number) {
-  return new Date(Date.now() + delayMinutes * 60 * 1000).toISOString();
+function escapeHtml(value: unknown) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
 }
 
-async function getLeadNotificationDelayMinutes(
+function normalizeEmails(value: unknown) {
+  if (!Array.isArray(value)) return [];
+
+  return Array.from(
+    new Set(
+      value
+        .map((email) => String(email || "").trim().toLowerCase())
+        .filter((email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)),
+    ),
+  ).slice(0, 10);
+}
+
+function formatDate(value: string) {
+  return new Intl.DateTimeFormat("en-GB", {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: "Asia/Jerusalem",
+  }).format(new Date(value));
+}
+
+function formatList(values: string[]) {
+  return values.length > 0 ? values.join(", ") : "-";
+}
+
+async function getLeadNotificationSettings(
   supabase: ReturnType<typeof createClient>,
 ) {
   const { data, error } = await supabase
@@ -209,10 +239,157 @@ async function getLeadNotificationDelayMinutes(
     console.warn("Could not read lead notification settings:", error);
   }
 
-  const delay = Number((data?.value as Record<string, unknown> | undefined)?.delayMinutes);
-  if (!Number.isFinite(delay)) return 10;
+  const value = (data?.value || {}) as Record<string, unknown>;
 
-  return Math.min(120, Math.max(1, Math.round(delay)));
+  return {
+    enabled: value.enabled !== false,
+    recipients: normalizeEmails(value.recipients),
+  };
+}
+
+function buildPartialLeadEmail(
+  payload: ReturnType<typeof buildPayload>,
+  partial: { id: string; created_at?: string; updated_at?: string },
+) {
+  const siteUrl = Deno.env.get("PUBLIC_SITE_URL") || "https://zenhousetattoo.com";
+  const adminUrl = `${siteUrl.replace(/\/$/, "")}/admin`;
+  const createdAt = partial.created_at || new Date().toISOString();
+  const updatedAt = partial.updated_at || createdAt;
+  const safeLeadId = partial.id.slice(0, 8);
+  const subject = `Zen House Tattoo - New partial lead from ${payload.full_name}`;
+  const rows = [
+    ["Lead type", "Partial lead"],
+    ["Lead ID", safeLeadId],
+    ["Name", payload.full_name],
+    ["Email", payload.email],
+    ["Phone", payload.phone],
+    ["Language", payload.source_language.toUpperCase()],
+    ["Color mode", payload.color_mode || "-"],
+    ["Styles", formatList(payload.styles)],
+    ["Body reference", payload.body_reference || "-"],
+    ["General area", payload.general_zone || "-"],
+    ["Specific area", payload.specific_zone || "-"],
+    ["Idea", payload.idea_description || "-"],
+    ["Created", formatDate(createdAt)],
+    ["Last updated", formatDate(updatedAt)],
+  ]
+    .map(
+      ([label, value]) => `
+        <tr>
+          <td style="padding:9px 10px;border-bottom:1px solid #e8edf3;color:#667085;font-weight:700;vertical-align:top;">${escapeHtml(label)}</td>
+          <td style="padding:9px 10px;border-bottom:1px solid #e8edf3;color:#101828;vertical-align:top;">${escapeHtml(value)}</td>
+        </tr>`,
+    )
+    .join("");
+
+  const html = `<!doctype html>
+<html>
+  <body style="margin:0;background:#f6f7f9;color:#101828;font-family:Arial,Helvetica,sans-serif;">
+    <div style="display:none;max-height:0;overflow:hidden;">
+      New partial lead received in Zen House Tattoo admin.
+    </div>
+    <main style="max-width:680px;margin:0 auto;padding:28px 16px;">
+      <section style="background:#ffffff;border:1px solid #e4e8ef;border-radius:14px;overflow:hidden;">
+        <header style="padding:22px 24px;background:#111827;color:#ffffff;">
+          <p style="margin:0 0 8px;color:#d6a56f;font-size:12px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;">Zen House Tattoo</p>
+          <h1 style="margin:0;font-size:24px;line-height:1.25;">New partial lead received</h1>
+        </header>
+        <div style="padding:22px 24px;">
+          <p style="margin:0 0 18px;color:#475467;line-height:1.55;">
+            Someone submitted contact details and reached the partial lead checkpoint. Open the admin panel to review the full request.
+          </p>
+          <table role="presentation" cellspacing="0" cellpadding="0" style="width:100%;border-collapse:collapse;border:1px solid #e8edf3;border-radius:10px;overflow:hidden;">
+            ${rows}
+          </table>
+          <p style="margin:22px 0 0;">
+            <a href="${escapeHtml(adminUrl)}" style="display:inline-block;padding:12px 16px;border-radius:8px;background:#111827;color:#ffffff;text-decoration:none;font-weight:700;">
+              Open admin panel
+            </a>
+          </p>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>`;
+  const text = [
+    "Zen House Tattoo - New partial lead received",
+    "",
+    `Lead ID: ${safeLeadId}`,
+    `Name: ${payload.full_name}`,
+    `Email: ${payload.email}`,
+    `Phone: ${payload.phone}`,
+    `Language: ${payload.source_language.toUpperCase()}`,
+    `Color mode: ${payload.color_mode || "-"}`,
+    `Styles: ${formatList(payload.styles)}`,
+    `Body reference: ${payload.body_reference || "-"}`,
+    `General area: ${payload.general_zone || "-"}`,
+    `Specific area: ${payload.specific_zone || "-"}`,
+    `Idea: ${payload.idea_description || "-"}`,
+    `Created: ${formatDate(createdAt)}`,
+    `Last updated: ${formatDate(updatedAt)}`,
+    "",
+    `Open admin panel: ${adminUrl}`,
+  ].join("\n");
+
+  return { html, subject, text };
+}
+
+async function sendPartialLeadNotification(
+  supabase: ReturnType<typeof createClient>,
+  payload: ReturnType<typeof buildPayload>,
+  partial: { id: string; created_at?: string; updated_at?: string },
+) {
+  const settings = await getLeadNotificationSettings(supabase);
+  if (!settings.enabled || settings.recipients.length === 0) return "";
+
+  const resendApiKey = Deno.env.get("RESEND_API_KEY");
+  if (!resendApiKey) return "Missing RESEND_API_KEY.";
+
+  const from = Deno.env.get("LEAD_NOTIFICATION_FROM") || DEFAULT_NOTIFICATION_FROM;
+  const { html, subject, text } = buildPartialLeadEmail(payload, partial);
+  const response = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${resendApiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      from,
+      to: settings.recipients,
+      subject,
+      html,
+      text,
+      tags: [
+        { name: "source", value: "zen_house_tattoo" },
+        { name: "lead_type", value: "partial" },
+      ],
+    }),
+  });
+
+  if (response.ok) return "";
+
+  const data = await response.json().catch(() => ({}));
+  return data.message || data.error || `Resend returned ${response.status}.`;
+}
+
+async function markPartialNotificationResult(
+  supabase: ReturnType<typeof createClient>,
+  partialId: string,
+  error: string,
+) {
+  const now = new Date().toISOString();
+  const payload = error
+    ? {
+        notification_attempted_at: now,
+        notification_error: error.slice(0, 500),
+      }
+    : {
+        notification_attempted_at: now,
+        notification_sent_at: now,
+        notification_error: null,
+      };
+
+  await supabase.from("partial_inquiries").update(payload).eq("id", partialId);
 }
 
 async function removeExistingPartialImages(
@@ -381,7 +558,7 @@ Deno.serve(async (request) => {
 
   const { data: existingPartial, error: existingPartialError } = await supabase
     .from("partial_inquiries")
-    .select("id, status, converted_inquiry_id")
+    .select("id, status, converted_inquiry_id, notification_sent_at")
     .eq("submission_key", payload.submission_key)
     .maybeSingle();
 
@@ -393,7 +570,6 @@ Deno.serve(async (request) => {
     return jsonResponse(request, { partial: existingPartial, converted: true });
   }
 
-  const notificationDelayMinutes = await getLeadNotificationDelayMinutes(supabase);
   const rateLimit = await hasTooManyRecentPartials(supabase, payload, clientIp);
 
   if (rateLimit.error) {
@@ -415,15 +591,16 @@ Deno.serve(async (request) => {
         ...payload,
         status: "partial",
         archived_at: null,
-        notification_due_at: getNotificationDueAt(notificationDelayMinutes),
-        notification_sent_at: null,
-        notification_error: null,
+        notification_due_at: new Date().toISOString(),
+        ...(existingPartial?.notification_sent_at
+          ? {}
+          : { notification_sent_at: null, notification_error: null }),
         client_ip: clientIp,
         user_agent: cleanText(request.headers.get("user-agent"), 500),
       },
       { onConflict: "submission_key" },
     )
-    .select("id, placement_marked_image_path")
+    .select("id, created_at, updated_at, placement_marked_image_path")
     .single();
 
   if (error || !partial) {
@@ -510,6 +687,15 @@ Deno.serve(async (request) => {
       console.error("Partial reference image metadata insert failed:", imageRowsError);
       await supabase.storage.from("inquiry-references").remove(uploadedPaths);
       return jsonResponse(request, { error: "Could not save reference images." }, 500);
+    }
+  }
+
+  if (!existingPartial?.notification_sent_at) {
+    const emailError = await sendPartialLeadNotification(supabase, payload, partial);
+    await markPartialNotificationResult(supabase, partial.id, emailError);
+
+    if (emailError) {
+      console.error(`Partial lead notification failed for ${partial.id}:`, emailError);
     }
   }
 
