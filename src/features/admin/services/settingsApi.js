@@ -1,7 +1,7 @@
 import { hasSupabaseConfig, supabase } from "../../../lib/supabaseClient";
 
 export const defaultFormSettings = {
-  whatsappPhone: "972547505670",
+  whatsappPhone: "972515781870",
   defaultLanguage: "he",
   formEnabled: true,
   maxReferenceImages: 4,
@@ -15,7 +15,10 @@ export const defaultLeadNotificationSettings = {
 
 export async function getFormSettings() {
   if (!hasSupabaseConfig) {
-    return { settings: defaultFormSettings, error: "Supabase is not configured yet." };
+    return {
+      settings: defaultFormSettings,
+      error: "Supabase is not configured yet.",
+    };
   }
 
   const { data, error } = await supabase
@@ -76,7 +79,10 @@ export async function saveLeadNotificationSettings(settings) {
   const nextSettings = normalizeLeadNotificationSettings(settings);
   const { data, error } = await supabase
     .from("app_settings")
-    .upsert({ key: "lead_notifications", value: nextSettings }, { onConflict: "key" })
+    .upsert(
+      { key: "lead_notifications", value: nextSettings },
+      { onConflict: "key" },
+    )
     .select("value")
     .single();
 
@@ -88,7 +94,8 @@ export async function saveLeadNotificationSettings(settings) {
 
 export function normalizeFormSettings(settings = {}) {
   return {
-    whatsappPhone: cleanPhone(settings.whatsappPhone) || defaultFormSettings.whatsappPhone,
+    whatsappPhone:
+      cleanPhone(settings.whatsappPhone) || defaultFormSettings.whatsappPhone,
     defaultLanguage: settings.defaultLanguage === "en" ? "en" : "he",
     formEnabled: settings.formEnabled !== false,
     maxReferenceImages: clampNumber(settings.maxReferenceImages, 1, 4, 4),
@@ -104,7 +111,9 @@ export function normalizeLeadNotificationSettings(settings = {}) {
 }
 
 function cleanPhone(value) {
-  return String(value || "").replace(/[^\d]/g, "").slice(0, 20);
+  return String(value || "")
+    .replace(/[^\d]/g, "")
+    .slice(0, 20);
 }
 
 function normalizeEmails(value) {
@@ -113,7 +122,11 @@ function normalizeEmails(value) {
   return Array.from(
     new Set(
       value
-        .map((email) => String(email || "").trim().toLowerCase())
+        .map((email) =>
+          String(email || "")
+            .trim()
+            .toLowerCase(),
+        )
         .filter((email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)),
     ),
   ).slice(0, 10);

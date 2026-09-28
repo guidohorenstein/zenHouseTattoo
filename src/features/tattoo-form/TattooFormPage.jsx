@@ -28,7 +28,7 @@ import { trackMetaEvent } from "../../lib/metaPixel";
 import { buildWhatsappUrl } from "./utils/buildWhatsappMessage";
 
 const defaultFormSettings = {
-  whatsappPhone: "972547505670",
+  whatsappPhone: "972515781870",
   defaultLanguage: "he",
   formEnabled: true,
   maxReferenceImages: 4,
@@ -84,7 +84,10 @@ function preloadImage(url) {
     image.decoding = "async";
     image.onload = () => {
       if (image.decode) {
-        image.decode().catch(() => {}).finally(resolve);
+        image
+          .decode()
+          .catch(() => {})
+          .finally(resolve);
       } else {
         resolve();
       }
@@ -200,7 +203,10 @@ function collectOptionImageUrls(optionList = []) {
   return optionList.map((option) => option.imageUrl).filter(Boolean);
 }
 
-function getRemoteBodyImage(bodyPhotos, { areaId, bodyReference, categoryId, imageRole }) {
+function getRemoteBodyImage(
+  bodyPhotos,
+  { areaId, bodyReference, categoryId, imageRole },
+) {
   return bodyPhotos.images.find((item) => {
     const matchesTarget = areaId
       ? item.body_area_id === areaId
@@ -225,7 +231,9 @@ function getRemoteBodyReferenceImage(bodyPhotos, bodyReference) {
 }
 
 function getRemoteBodyReferenceImageUrl(bodyPhotos, bodyReference) {
-  return getRemoteBodyReferenceImage(bodyPhotos, bodyReference)?.previewUrl || "";
+  return (
+    getRemoteBodyReferenceImage(bodyPhotos, bodyReference)?.previewUrl || ""
+  );
 }
 
 export function TattooFormPage() {
@@ -324,8 +332,7 @@ export function TattooFormPage() {
           textsResult,
           settingsResult,
           morePreviewsResult,
-        ] =
-          await Promise.all([
+        ] = await Promise.all([
           listPublicTattooStyles(),
           listPublicBodyPhotos(),
           listPublicFormTexts(),
@@ -346,15 +353,21 @@ export function TattooFormPage() {
             images: bodyPhotosResult.images,
             referenceImages: bodyPhotosResult.referenceImages,
           });
-          setHeTranslations(applyTextOverrides(translations.he, textsResult.he));
-          setEnTranslations(applyTextOverrides(translations.en, textsResult.en));
+          setHeTranslations(
+            applyTextOverrides(translations.he, textsResult.he),
+          );
+          setEnTranslations(
+            applyTextOverrides(translations.en, textsResult.en),
+          );
 
           const criticalImageUrls = [
             "/images/backgrounds/background.webp",
             "/images/logo/topbar-logo-white.webp",
           ];
 
-          Promise.all(criticalImageUrls.map((url) => preloadImage(url))).catch(() => {});
+          Promise.all(criticalImageUrls.map((url) => preloadImage(url))).catch(
+            () => {},
+          );
         }
       } catch {
         // The local fallback form remains usable if remote content is unavailable.
@@ -378,10 +391,10 @@ export function TattooFormPage() {
     toastTimerRef.current = window.setTimeout(() => setToastMessage(""), 3200);
   }
 
-  const options = useMemo(
-    () => {
-      const hasRemoteBodyPhotos = remoteBodyPhotos.categories.length > 0;
-      const remoteCategoryOptions = remoteBodyPhotos.categories.map((category) => {
+  const options = useMemo(() => {
+    const hasRemoteBodyPhotos = remoteBodyPhotos.categories.length > 0;
+    const remoteCategoryOptions = remoteBodyPhotos.categories.map(
+      (category) => {
         const image = getRemoteBodyImage(remoteBodyPhotos, {
           categoryId: category.id,
           bodyReference: formData.bodyReference,
@@ -394,35 +407,40 @@ export function TattooFormPage() {
           imageUrl: image?.previewUrl || "",
           cropData: image?.crop_data,
         };
-      });
-      const selectedRemoteCategory = remoteBodyPhotos.categories.find(
-        (category) => category.slug === formData.generalZone,
-      );
-      const remoteAreaOptions = remoteBodyPhotos.areas
-        .filter((area) => area.category_id === selectedRemoteCategory?.id)
-        .map((area) => {
-          const image = getRemoteBodyImage(remoteBodyPhotos, {
-            areaId: area.id,
-            bodyReference: formData.bodyReference,
-            imageRole: "card",
-          });
-
-          return {
-            id: area.slug,
-            label: language === "he" ? area.title_he : area.title_en,
-            imageUrl: image?.previewUrl || "",
-            cropData: image?.crop_data,
-          };
+      },
+    );
+    const selectedRemoteCategory = remoteBodyPhotos.categories.find(
+      (category) => category.slug === formData.generalZone,
+    );
+    const remoteAreaOptions = remoteBodyPhotos.areas
+      .filter((area) => area.category_id === selectedRemoteCategory?.id)
+      .map((area) => {
+        const image = getRemoteBodyImage(remoteBodyPhotos, {
+          areaId: area.id,
+          bodyReference: formData.bodyReference,
+          imageRole: "card",
         });
 
-      return {
-        bodyReference: toOptions(["male", "female"], t, (referenceId) =>
+        return {
+          id: area.slug,
+          label: language === "he" ? area.title_he : area.title_en,
+          imageUrl: image?.previewUrl || "",
+          cropData: image?.crop_data,
+        };
+      });
+
+    return {
+      bodyReference: toOptions(
+        ["male", "female"],
+        t,
+        (referenceId) =>
           getRemoteBodyReferenceImageUrl(remoteBodyPhotos, referenceId) ||
           getBodyReferenceImageUrl(referenceId),
-        ).map((option) => ({
-          ...option,
-          cropData: getRemoteBodyReferenceImage(remoteBodyPhotos, option.id)?.crop_data,
-        })),
+      ).map((option) => ({
+        ...option,
+        cropData: getRemoteBodyReferenceImage(remoteBodyPhotos, option.id)
+          ?.crop_data,
+      })),
       hasTattoos: toOptions(["yes", "no"], t),
       generalZones: hasRemoteBodyPhotos
         ? remoteCategoryOptions
@@ -440,7 +458,7 @@ export function TattooFormPage() {
               getSpecificZoneImageUrl(specificZoneId, formData.bodyReference),
           ),
       styles: remoteStyles.length
-          ? toRemoteStyleOptions(
+        ? toRemoteStyleOptions(
             remoteStyles.filter(
               (style) => getStyleGroup(style, formData.colorMode) === "main",
             ),
@@ -467,19 +485,17 @@ export function TattooFormPage() {
       ),
       timing: toOptions(timingOptions, t),
       contactTimes: toOptions(contactTimeOptions, t),
-      };
-    },
-    [
-      formData.bodyReference,
-      formData.colorMode,
-      formData.generalZone,
-      language,
-      moreStylePreviews,
-      remoteBodyPhotos,
-      remoteStyles,
-      t,
-    ],
-  );
+    };
+  }, [
+    formData.bodyReference,
+    formData.colorMode,
+    formData.generalZone,
+    language,
+    moreStylePreviews,
+    remoteBodyPhotos,
+    remoteStyles,
+    t,
+  ]);
 
   useEffect(() => {
     const nextStepId = formSteps[currentStep + 1];
@@ -493,7 +509,10 @@ export function TattooFormPage() {
       bodyReference: collectOptionImageUrls(options.bodyReference),
       generalZone: collectOptionImageUrls(options.generalZones),
       specificZone: collectOptionImageUrls(options.specificZones),
-      placement: [placementImageUrl, "/images/placement/placement-guide.gif"].filter(Boolean),
+      placement: [
+        placementImageUrl,
+        "/images/placement/placement-guide.gif",
+      ].filter(Boolean),
     };
     const urls = [
       ...(urlsByStep[stepId] || []),
@@ -573,17 +592,21 @@ export function TattooFormPage() {
       JSON.stringify(partialSnapshot),
     ].join("|");
 
-    if (partialLeadSavingRef.current || partialLeadSignatureRef.current === signature) {
+    if (
+      partialLeadSavingRef.current ||
+      partialLeadSignatureRef.current === signature
+    ) {
       return partialLeadSignatureRef.current === signature;
     }
 
     partialLeadSavingRef.current = true;
 
     try {
-      const [{ savePartialInquiry }, { exportMarkedPlacementImage }] = await Promise.all([
-        import("./services/savePartialInquiry"),
-        import("./utils/exportMarkedPlacementImage"),
-      ]);
+      const [{ savePartialInquiry }, { exportMarkedPlacementImage }] =
+        await Promise.all([
+          import("./services/savePartialInquiry"),
+          import("./utils/exportMarkedPlacementImage"),
+        ]);
       const placementImage = await exportMarkedPlacementImage({
         imageUrl: placementImageUrl,
         boxes: formData.placementBoxes,
@@ -633,7 +656,8 @@ export function TattooFormPage() {
   function selectAndAdvance(field, value) {
     updateFormData(field, value);
 
-    if (currentStep >= formSteps.length - 1 || transitionPhase !== "idle") return;
+    if (currentStep >= formSteps.length - 1 || transitionPhase !== "idle")
+      return;
 
     window.setTimeout(() => {
       goToStep(Math.min(formSteps.length - 1, currentStep + 1));
@@ -643,7 +667,11 @@ export function TattooFormPage() {
   async function submit() {
     if (!canGoNext || submitLockRef.current) return;
 
-    const whatsappUrl = buildWhatsappUrl(formData, t, formSettings.whatsappPhone);
+    const whatsappUrl = buildWhatsappUrl(
+      formData,
+      t,
+      formSettings.whatsappPhone,
+    );
 
     if (submittedInquiryId) {
       submitLockRef.current = true;
@@ -681,16 +709,22 @@ export function TattooFormPage() {
   }
 
   async function performSubmission() {
-    const [{ submitInquiry }, { exportMarkedPlacementImage }] = await Promise.all([
-      import("./services/submitInquiry"),
-      import("./utils/exportMarkedPlacementImage"),
-    ]);
+    const [{ submitInquiry }, { exportMarkedPlacementImage }] =
+      await Promise.all([
+        import("./services/submitInquiry"),
+        import("./utils/exportMarkedPlacementImage"),
+      ]);
     const placementImage = await exportMarkedPlacementImage({
       imageUrl: placementImageUrl,
       boxes: formData.placementBoxes,
     });
 
-    return submitInquiry(formData, language, submissionKeyRef.current, placementImage);
+    return submitInquiry(
+      formData,
+      language,
+      submissionKeyRef.current,
+      placementImage,
+    );
   }
 
   function showStepError() {
@@ -720,7 +754,9 @@ export function TattooFormPage() {
           onFullNameChange={(value) => updateFormData("fullName", value)}
           onEmailChange={(value) => updateFormData("email", value)}
           onPhoneChange={updatePhone}
-          onAcceptedTermsChange={(value) => updateFormData("acceptedTerms", value)}
+          onAcceptedTermsChange={(value) =>
+            updateFormData("acceptedTerms", value)
+          }
         />
       ),
       bodyReference: (
@@ -872,52 +908,57 @@ export function TattooFormPage() {
             <div className="step">
               <h1>Zen House Tattoo</h1>
               <p>
-                The consultation form is temporarily paused. Please try again later.
+                The consultation form is temporarily paused. Please try again
+                later.
               </p>
             </div>
           ) : (
             <>
-          {/* <p className="eyebrow">
+              {/* <p className="eyebrow">
             {t.step} {currentStep + 1} {t.of} {formSteps.length}
           </p> */}
-          <div
-            className={`step-motion step-motion--${transitionPhase}`}
-            key={stepId}
-          >
-            {renderStep()}
-          </div>
+              <div
+                className={`step-motion step-motion--${transitionPhase}`}
+                key={stepId}
+              >
+                {renderStep()}
+              </div>
 
-          <FormNavigation
-            backLabel={t.back}
-            nextLabel={
-              stepId === "welcome"
-                ? t.start
-                : stepId === "name"
-                  ? t.submitDetails
-                  : t.next
-            }
-            quoteLabel={t.quote}
-            canGoBack={currentStep > 0}
-            canGoNext={canGoNext}
-            isLastStep={isLastStep}
-            hideNext={
-              autoAdvanceSteps.includes(stepId) &&
-              !["timing", "contactTime"].includes(stepId)
-            }
-            isSubmitting={isSubmitting}
-            submittingLabel="Sending..."
-            onBack={goBack}
-            onNext={goNext}
-            onSubmit={submit}
-            onInvalid={showStepError}
-          />
+              <FormNavigation
+                backLabel={t.back}
+                nextLabel={
+                  stepId === "welcome"
+                    ? t.start
+                    : stepId === "name"
+                      ? t.submitDetails
+                      : t.next
+                }
+                quoteLabel={t.quote}
+                canGoBack={currentStep > 0}
+                canGoNext={canGoNext}
+                isLastStep={isLastStep}
+                hideNext={
+                  autoAdvanceSteps.includes(stepId) &&
+                  !["timing", "contactTime"].includes(stepId)
+                }
+                isSubmitting={isSubmitting}
+                submittingLabel="Sending..."
+                onBack={goBack}
+                onNext={goNext}
+                onSubmit={submit}
+                onInvalid={showStepError}
+              />
 
-          {isSubmitting ? (
-            <div className="submit-loader-overlay" role="status" aria-live="polite">
-              <span className="submit-loader-spinner" aria-hidden="true" />
-              <p>{t.submitting}</p>
-            </div>
-          ) : null}
+              {isSubmitting ? (
+                <div
+                  className="submit-loader-overlay"
+                  role="status"
+                  aria-live="polite"
+                >
+                  <span className="submit-loader-spinner" aria-hidden="true" />
+                  <p>{t.submitting}</p>
+                </div>
+              ) : null}
             </>
           )}
         </div>
@@ -931,17 +972,3 @@ export function TattooFormPage() {
     </main>
   );
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-

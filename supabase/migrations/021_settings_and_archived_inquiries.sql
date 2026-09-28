@@ -15,7 +15,7 @@ insert into public.app_settings (key, value)
 values (
   'form',
   '{
-    "whatsappPhone": "972547505670",
+    "whatsappPhone": "972515781870",
     "defaultLanguage": "he",
     "formEnabled": true,
     "maxReferenceImages": 4,

@@ -63,7 +63,9 @@ export function SettingsModule({ canEdit = true }) {
   function deleteRecipient(index) {
     setNotificationDraft((currentDraft) => ({
       ...currentDraft,
-      recipients: currentDraft.recipients.filter((_, recipientIndex) => recipientIndex !== index),
+      recipients: currentDraft.recipients.filter(
+        (_, recipientIndex) => recipientIndex !== index,
+      ),
     }));
   }
 
@@ -91,13 +93,20 @@ export function SettingsModule({ canEdit = true }) {
 
   return (
     <section className="admin-module-stack">
-      <form className="admin-white-panel admin-settings-panel" onSubmit={handleSubmit}>
+      <form
+        className="admin-white-panel admin-settings-panel"
+        onSubmit={handleSubmit}
+      >
         <div className="admin-section-heading">
           <div>
             <h3>Form settings</h3>
             <p>Control the public form behavior without changing code.</p>
           </div>
-          <button className="admin-light-button" type="button" onClick={loadSettings}>
+          <button
+            className="admin-light-button"
+            type="button"
+            onClick={loadSettings}
+          >
             {loading ? "Loading..." : "Reload"}
           </button>
         </div>
@@ -110,10 +119,13 @@ export function SettingsModule({ canEdit = true }) {
             <input
               disabled={!canEdit}
               inputMode="numeric"
-              placeholder="Example: 972547505670"
+              placeholder="Example: 972515781870"
               value={draft.whatsappPhone}
               onChange={(event) =>
-                updateDraft("whatsappPhone", event.target.value.replace(/[^\d]/g, ""))
+                updateDraft(
+                  "whatsappPhone",
+                  event.target.value.replace(/[^\d]/g, ""),
+                )
               }
             />
           </label>
@@ -123,7 +135,9 @@ export function SettingsModule({ canEdit = true }) {
             <select
               disabled={!canEdit}
               value={draft.defaultLanguage}
-              onChange={(event) => updateDraft("defaultLanguage", event.target.value)}
+              onChange={(event) =>
+                updateDraft("defaultLanguage", event.target.value)
+              }
             >
               <option value="he">Hebrew</option>
               <option value="en">English</option>
@@ -152,7 +166,9 @@ export function SettingsModule({ canEdit = true }) {
               min="1"
               type="number"
               value={draft.maxReferenceImages}
-              onChange={(event) => updateDraft("maxReferenceImages", event.target.value)}
+              onChange={(event) =>
+                updateDraft("maxReferenceImages", event.target.value)
+              }
             />
           </label>
 
@@ -164,7 +180,9 @@ export function SettingsModule({ canEdit = true }) {
               min="1"
               type="number"
               value={draft.maxPlacementBoxes}
-              onChange={(event) => updateDraft("maxPlacementBoxes", event.target.value)}
+              onChange={(event) =>
+                updateDraft("maxPlacementBoxes", event.target.value)
+              }
             />
           </label>
         </div>
@@ -181,9 +199,7 @@ export function SettingsModule({ canEdit = true }) {
           <div className="admin-section-heading">
             <div>
               <h3>Lead notification emails</h3>
-              <p>
-                Send an email as soon as a partial lead is saved.
-              </p>
+              <p>Send an email as soon as a partial lead is saved.</p>
             </div>
             <button
               className="admin-light-button"
@@ -202,7 +218,10 @@ export function SettingsModule({ canEdit = true }) {
                 disabled={!canEdit}
                 value={notificationDraft.enabled ? "enabled" : "disabled"}
                 onChange={(event) =>
-                  updateNotificationDraft("enabled", event.target.value === "enabled")
+                  updateNotificationDraft(
+                    "enabled",
+                    event.target.value === "enabled",
+                  )
                 }
               >
                 <option value="enabled">Enabled</option>
@@ -214,7 +233,8 @@ export function SettingsModule({ canEdit = true }) {
           <div className="admin-notification-email-list">
             {notificationDraft.recipients.length === 0 ? (
               <p className="admin-muted-light">
-                No notification emails yet. Add one to start receiving lead alerts.
+                No notification emails yet. Add one to start receiving lead
+                alerts.
               </p>
             ) : null}
 
@@ -225,7 +245,9 @@ export function SettingsModule({ canEdit = true }) {
                   placeholder="name@example.com"
                   type="email"
                   value={recipient}
-                  onChange={(event) => updateRecipient(index, event.target.value)}
+                  onChange={(event) =>
+                    updateRecipient(index, event.target.value)
+                  }
                 />
                 <button
                   className="admin-light-button"
@@ -242,13 +264,19 @@ export function SettingsModule({ canEdit = true }) {
           <div className="admin-settings-note">
             <strong>Delivery guardrails</strong>
             <p>
-              Emails are sent from the backend as soon as contact details create a partial lead. Duplicate saves for the same lead do not send another email.
+              Emails are sent from the backend as soon as contact details create
+              a partial lead. Duplicate saves for the same lead do not send
+              another email.
             </p>
           </div>
         </div>
 
         <div className="admin-settings-actions">
-          <button className="admin-primary-light" disabled={!canEdit || saving} type="submit">
+          <button
+            className="admin-primary-light"
+            disabled={!canEdit || saving}
+            type="submit"
+          >
             {saving ? "Saving..." : "Save settings"}
           </button>
         </div>
