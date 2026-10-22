@@ -1,5 +1,6 @@
 import { useId, useMemo, useState } from "react";
 import { getZoneImageUrl } from "../../tattoo-form/data/bodyZones";
+import { recoverMediaOnError } from "../../../lib/mediaRecovery";
 import { StatusBadge } from "../components/StatusBadge";
 import { inquiryStatuses } from "../services/inquiriesApi";
 import {
@@ -645,7 +646,7 @@ function MediaPreviewStrip({ images, inquiry, onImagePreview }) {
 function PlacementImage({ imageUrl, boxes }) {
   return (
     <span className="admin-placement-image-wrap">
-      <img src={imageUrl} alt="Marked body placement" />
+      <img src={imageUrl} alt="Marked body placement" onError={recoverMediaOnError} />
       {boxes.map((box) => (
         <span
           className="admin-placement-box"
@@ -670,7 +671,7 @@ function ImageLightbox({ image, onClose }) {
         {image.boxes ? (
           <PlacementImage imageUrl={image.src} boxes={image.boxes} />
         ) : (
-          <img src={image.src} alt={image.alt} />
+          <img src={image.src} alt={image.alt} onError={recoverMediaOnError} />
         )}
       </div>
     </div>

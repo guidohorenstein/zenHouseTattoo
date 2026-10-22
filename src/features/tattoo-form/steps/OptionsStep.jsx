@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { OptionCard } from "../components/OptionCard";
+import { recoverMediaOnError } from "../../../lib/mediaRecovery";
 
 export function OptionsStep({
   title,
@@ -85,6 +86,7 @@ export function OptionsStep({
         <span className="option-card__media">
           <img
             src={previewOption.imageUrl}
+            onError={recoverMediaOnError}
             alt=""
             draggable="false"
             decoding="async"

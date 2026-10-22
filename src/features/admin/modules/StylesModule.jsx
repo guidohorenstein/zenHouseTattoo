@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { CroppedImage } from "../../../components/CroppedImage";
+import { recoverMediaOnError } from "../../../lib/mediaRecovery";
 import { normalizeCrop } from "../../../utils/cropUtils";
 import {
   deleteTattooStyle,
@@ -550,6 +551,7 @@ export function StylesModule({ canEdit = true }) {
             <article className="admin-style-library-row" key={style.id}>
               <img
                 src={style.colorPreviewUrl || style.blackGreyPreviewUrl}
+                onError={recoverMediaOnError}
                 alt={style.title_en}
               />
               <div>

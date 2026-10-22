@@ -1,9 +1,20 @@
-﻿function loadImage(imageUrl) {
+import { getMediaRecoveryUrl } from "../../../lib/mediaRecovery";
+
+function loadImage(imageUrl) {
   return new Promise((resolve, reject) => {
     const image = new Image();
+    let triedRecovery = false;
     image.crossOrigin = "anonymous";
     image.onload = () => resolve(image);
-    image.onerror = () => reject(new Error("Could not load placement image."));
+    image.onerror = () => {
+      const recoveryUrl = getMediaRecoveryUrl(imageUrl);
+      if (recoveryUrl && !triedRecovery) {
+        triedRecovery = true;
+        image.src = new URL(recoveryUrl, window.location.origin).href;
+        return;
+      }
+      reject(new Error("Could not load placement image."));
+    };
     image.src = new URL(imageUrl, window.location.origin).href;
   });
 }
@@ -24,6 +35,16 @@ function canvasToBlob(canvas) {
 export async function exportMarkedPlacementImage({ imageUrl, boxes }) {
   if (!imageUrl || boxes.length === 0) return null;
 
+  try {
+    return await renderMarkedPlacementImage(imageUrl, boxes);
+  } catch (error) {
+    // Placement coordinates are still sent in the inquiry payload.
+    console.warn("Could not generate the optional placement preview:", error);
+    return null;
+  }
+}
+
+async function renderMarkedPlacementImage(imageUrl, boxes) {
   const image = await loadImage(imageUrl);
   const width = image.naturalWidth || image.width;
   const height = image.naturalHeight || image.height;

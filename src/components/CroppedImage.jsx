@@ -1,4 +1,5 @@
 import { normalizeCrop } from "../utils/cropUtils";
+import { recoverMediaOnError } from "../lib/mediaRecovery";
 
 export function CroppedImage({
   alt = "",
@@ -19,6 +20,7 @@ export function CroppedImage({
           decoding="async"
           fetchPriority={fetchPriority}
           loading={loading}
+          onError={recoverMediaOnError}
           src={imageUrl}
           style={{
             objectFit,

@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { recoverMediaOnError } from "../../../lib/mediaRecovery";
 
 function round(value) {
   return Number(value.toFixed(1));
@@ -238,6 +239,7 @@ export function PlacementStep({
           <img
             className="placement-image"
             src={imageUrl}
+            onError={recoverMediaOnError}
             alt=""
             draggable="false"
             decoding="async"
