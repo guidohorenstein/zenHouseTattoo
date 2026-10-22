@@ -364,6 +364,24 @@ function RequestCard({
 }) {
   const detailId = useId();
 
+  function handleSummaryClick(event) {
+    const selection = window.getSelection();
+    const isSelectingSummary = selection && !selection.isCollapsed
+      && event.currentTarget.contains(selection.anchorNode)
+      && event.currentTarget.contains(selection.focusNode);
+
+    if (isSelectingSummary || event.detail > 1) return;
+
+    onToggle();
+  }
+
+  function handleSummaryKeyDown(event) {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      onToggle();
+    }
+  }
+
   return (
     <article className={`admin-request-card ${expanded ? "is-expanded" : ""} ${
       inquiry.archived_at ? "is-archived" : ""
@@ -377,12 +395,21 @@ function RequestCard({
             aria-label={`Select ${inquiry.full_name}`}
           />
         </label>
-        <div className="admin-request-summary">
+        <div
+          className="admin-request-summary"
+          role="button"
+          tabIndex={0}
+          aria-expanded={expanded}
+          aria-controls={expanded ? detailId : undefined}
+          aria-label={`${expanded ? "Hide" : "Show"} details for ${inquiry.full_name}`}
+          onClick={handleSummaryClick}
+          onKeyDown={handleSummaryKeyDown}
+        >
         <div>
           <strong>{inquiry.full_name}</strong>
           <span>{formatDate(inquiry.created_at)}</span>
         </div>
-        <div>
+        <div className="admin-request-contact">
           <span>{inquiry.email}</span>
           <span>{inquiry.phone}</span>
         </div>
@@ -402,16 +429,6 @@ function RequestCard({
         <span className="admin-summary-status-stack">
           <StatusBadge status={inquiry.status} />
           {inquiry.archived_at ? <span className="admin-archived-pill">Archived</span> : null}
-          <button
-            className="admin-light-button"
-            type="button"
-            aria-expanded={expanded}
-            aria-controls={expanded ? detailId : undefined}
-            aria-label={`${expanded ? "Hide" : "Show"} details for ${inquiry.full_name}`}
-            onClick={onToggle}
-          >
-            {expanded ? "Hide details" : "Show details"}
-          </button>
         </span>
         </div>
       </div>

@@ -2259,6 +2259,16 @@ button.admin-ranked-row:hover {
   text-align: left;
   -webkit-user-select: text;
   user-select: text;
+  cursor: pointer;
+}
+
+.admin-request-summary:focus-visible {
+  outline: 2px solid #a67c52;
+  outline-offset: -3px;
+}
+
+.admin-request-summary .admin-request-contact {
+  cursor: text;
 }
 
 .admin-request-summary div {
