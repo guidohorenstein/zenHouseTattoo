@@ -369,7 +369,8 @@ export function TattooFormPage() {
             () => {},
           );
         }
-      } catch {
+      } catch (error) {
+        console.error("Unable to load remote form content", error);
         // The local fallback form remains usable if remote content is unavailable.
         await Promise.all([
           preloadImage("/images/backgrounds/background.webp"),

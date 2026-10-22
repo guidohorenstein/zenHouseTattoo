@@ -1,5 +1,6 @@
 import { hasSupabaseConfig, supabase } from "../../../lib/supabaseClient";
 import { prepareImageForUpload } from "./imageCompression";
+import recoveryMedia from "../../../lib/recoveryMedia.json";
 
 const STYLE_IMAGE_BUCKET = "admin-media";
 
@@ -171,6 +172,10 @@ export function normalizeSlug(value) {
 export function getAdminMediaUrl(path) {
   if (!path) return "";
   if (!isManagedMediaPath(path)) return "";
+
+  if (import.meta.env.VITE_MEDIA_RECOVERY_MODE === "true" && recoveryMedia[path]) {
+    return recoveryMedia[path];
+  }
 
   const { data } = supabase.storage.from(STYLE_IMAGE_BUCKET).getPublicUrl(path);
   return data.publicUrl;
