@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useId, useMemo, useState } from "react";
 import { getZoneImageUrl } from "../../tattoo-form/data/bodyZones";
 import { StatusBadge } from "../components/StatusBadge";
 import { inquiryStatuses } from "../services/inquiriesApi";
@@ -361,6 +361,8 @@ function RequestCard({
   onSelect,
   onToggle,
 }) {
+  const detailId = useId();
+
   return (
     <article className={`admin-request-card ${expanded ? "is-expanded" : ""} ${
       inquiry.archived_at ? "is-archived" : ""
@@ -374,7 +376,7 @@ function RequestCard({
             aria-label={`Select ${inquiry.full_name}`}
           />
         </label>
-        <button className="admin-request-summary" type="button" onClick={onToggle}>
+        <div className="admin-request-summary">
         <div>
           <strong>{inquiry.full_name}</strong>
           <span>{formatDate(inquiry.created_at)}</span>
@@ -399,12 +401,22 @@ function RequestCard({
         <span className="admin-summary-status-stack">
           <StatusBadge status={inquiry.status} />
           {inquiry.archived_at ? <span className="admin-archived-pill">Archived</span> : null}
+          <button
+            className="admin-light-button"
+            type="button"
+            aria-expanded={expanded}
+            aria-controls={expanded ? detailId : undefined}
+            aria-label={`${expanded ? "Hide" : "Show"} details for ${inquiry.full_name}`}
+            onClick={onToggle}
+          >
+            {expanded ? "Hide details" : "Show details"}
+          </button>
         </span>
-        </button>
+        </div>
       </div>
 
       {expanded ? (
-        <div className="admin-request-expanded">
+        <div className="admin-request-expanded" id={detailId}>
           {detailLoading ? <p className="admin-muted-light">Loading full request...</p> : null}
           {inquiry.recordType === "partial" ? (
             <PartialRequestDetail
